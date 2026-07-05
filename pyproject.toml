@@ -1,11 +1,13 @@
 [project]
 name = "podcast-automation"
 version = "2.0.0"
-description = "Fully-local podcast generator: RSS -> LM Studio script -> VibeVoice MLX audio."
+description = "Fully-local news-bulletin generator: RSS -> LM Studio script -> VibeVoice MLX audio."
 requires-python = ">=3.11"
+license = "MIT"
 dependencies = [
     "httpx>=0.27",
     "feedparser>=6.0",
+    "trafilatura>=1.8",      # full article text extraction
     "openai>=1.51",          # client only; points at local LM Studio
     "pydantic>=2.9",
     "python-dotenv>=1.0",

@@ -78,7 +78,6 @@ RSS_FEEDS: dict[str, list[str]] = {
     ],
 }
 ENTRIES_PER_FEED = 4
-TARGET_MINUTES = 6  # rough episode length target
 
 
 @dataclass

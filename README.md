@@ -61,17 +61,18 @@ python run.py                  # full pipeline -> output/episode.wav
 Individual stages are runnable too:
 
 ```sh
-python -m podcast.ingest
-python -m podcast.curate
-python -m podcast.write
-python -m podcast.synth
+python -m podcast.ingest    # fetch RSS
+python -m podcast.curate    # dedup + pick stories
+python -m podcast.extras    # weather + markets probe
+python -m podcast.write     # curate -> write -> fact-check -> assemble
+python -m podcast.synth     # re-voice the current script.json
 ```
 
 ## Output
 
 - `output/content.json`   — fetched articles
 - `output/curation.json`  — chosen stories
-- `output/script.json`    — the dialogue
+- `output/script.json`    — the bulletin script (anchor + weather turns)
 - `output/episode.wav`    — the finished episode
 
 ## Publishing (optional)
@@ -86,7 +87,9 @@ Drive and email the link.
 | `WRITER_MODEL` | `qwen3.5-9b-mlx` | any LM Studio model; `qwen3.5-4b-mlx` is lighter |
 | `TTS_MODEL` | `mlx-community/VibeVoice-Realtime-0.5B-fp16` | |
 | `TTS_DDPM_STEPS` | `20` | higher = better quality, slower |
-| `TARGET_MINUTES` | `6` | rough episode length |
+| `ANCHOR_VOICE` / `WEATHER_VOICE` | `en-Frank_man` / `en-Emma_woman` | bundled VibeVoice caches |
+| `SPEED_ANCHOR` / `SPEED_WEATHER` | `0.92` / `1.10` | tempo, pitch-preserving; >1 = faster |
+| `WEATHER_CITY` / `WEATHER_LAT` / `WEATHER_LON` | `Munich` / `48.137` / `11.575` | weather segment |
 
 ## Notes on model choice
 
@@ -94,3 +97,8 @@ Drive and email the link.
 - `gpt-oss-20b` degenerates under strict JSON output; avoid for this task.
 - `qwen3.5-9b` is a reasoning model — it emits structured output in the
   reasoning channel, which `podcast/llm.py` reads transparently.
+
+## License
+
+MIT — see [LICENSE](LICENSE). Note the local models carry their own licenses
+(VibeVoice: MIT; Qwen3.5: Qwen license) and are not redistributed here.

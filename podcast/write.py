@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from datetime import date
 
-from .config import ANCHOR, PATHS, WEATHER, WEATHER_CITY
+from .config import ANCHOR, PATHS, WEATHER
 from .llm import structured
 from .models import Article, Curation, MarketQuote, Script, Turn, Weather
 

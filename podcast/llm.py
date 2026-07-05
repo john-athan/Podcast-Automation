@@ -5,7 +5,6 @@ Structured output via json_schema. The writer model is loaded on demand
 """
 from __future__ import annotations
 
-import json
 import shutil
 import subprocess
 from typing import Type, TypeVar
