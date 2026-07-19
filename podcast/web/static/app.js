@@ -484,6 +484,40 @@ async function refreshConfig() {
   if (!cfgEdit) renderConfig();
 }
 
+let HEALTH = null;
+async function refreshHealth() {
+  try { HEALTH = await api("/api/health"); } catch { HEALTH = null; }
+  renderHealth();
+}
+function renderHealth() {
+  const box = $("#health");
+  if (!HEALTH) { box.innerHTML = ""; return; }
+  const lm = HEALTH.lmstudio || {};
+  const parts = [];
+  if (!lm.ok) {
+    parts.push(`<div class="banner warn"><span class="ico">⚠</span><div class="body">`
+      + `<h3>LM Studio is offline</h3>`
+      + `<p>The writer stages — <b>Curate</b>, <b>Write</b>, <b>Verify</b> — call a local LLM at `
+      + `<code>${esc(lm.url || "")}</code>. Start LM Studio's local server (port 1234) and load `
+      + `<code>${esc(lm.writer || "")}</code>, then run again.</p>`
+      + `<div class="re"><button data-recheck>Recheck</button></div></div></div>`);
+  } else if (lm.writer_loaded === false) {
+    parts.push(`<div class="banner info"><span class="ico">ℹ</span><div class="body">`
+      + `<h3>Writer model not loaded</h3>`
+      + `<p>LM Studio is up, but <code>${esc(lm.writer)}</code> isn't loaded. It will load on first `
+      + `use (a cold-start delay), or load it now in LM Studio.</p>`
+      + `<div class="re"><button data-recheck>Recheck</button></div></div></div>`);
+  }
+  if (HEALTH.ffmpeg === false) {
+    parts.push(`<div class="banner info"><span class="ico">ℹ</span><div class="body">`
+      + `<h3>ffmpeg not found</h3>`
+      + `<p>Loudness normalization (−16 LUFS) and per-voice tempo are skipped without ffmpeg. `
+      + `Install with <code>brew install ffmpeg</code>.</p></div></div>`);
+  }
+  box.innerHTML = parts.join("");
+  box.querySelectorAll("[data-recheck]").forEach((b) => (b.onclick = refreshHealth));
+}
+
 // ---- websocket ------------------------------------------------------------
 let artifactTimer;
 function scheduleRefresh() { clearTimeout(artifactTimer); artifactTimer = setTimeout(refreshState, 300); }
@@ -518,7 +552,12 @@ function connectWS() {
       case "artifact": scheduleRefresh(); break;
       case "run_done": case "run_error": case "run_end":
         scheduleRefresh();
-        if (ev.type === "run_error") toast(ev.message || "run failed", true);
+        refreshHealth();
+        if (ev.type === "run_error") {
+          const m = (ev.message || "").toLowerCase();
+          if (m.includes("connect")) toast("LM Studio offline — see the banner", true);
+          else toast(ev.message || "run failed", true);
+        }
         if (ev.type === "run_done") toast("Bulletin ready");
         break;
     }
@@ -533,6 +572,8 @@ async function boot() {
   $("#stageCount").textContent = `${STAGES.length} stages`;
   await refreshConfig();
   await refreshState();
+  await refreshHealth();
+  setInterval(refreshHealth, 20000);   // keep the LM Studio status current
   tickClock();
   connectWS();
 }

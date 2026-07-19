@@ -22,7 +22,7 @@ from pydantic import BaseModel
 from ..config import ANCHOR, PATHS, WEATHER
 from ..events import STAGE_KEYS, STAGES
 from ..models import Script, Turn
-from . import audio, config_io, state
+from . import audio, config_io, health, state
 from .runner import _worker
 
 _STATIC = Path(__file__).resolve().parent / "static"
@@ -161,6 +161,11 @@ app = FastAPI(title="Bulletin Desk", lifespan=lifespan)
 @app.get("/api/stages")
 def api_stages():
     return [{"key": k, "label": lb, "desc": d} for k, lb, d in STAGES]
+
+
+@app.get("/api/health")
+def api_health():
+    return health.check()
 
 
 @app.get("/api/state")
