@@ -6,9 +6,12 @@ from the real figures, so those numbers are always exact and never hallucinated.
 """
 from __future__ import annotations
 
+import json
 from datetime import date
+from urllib.parse import urlparse
 
 from .config import ANCHOR, PATHS, WEATHER
+from .events import Emitter, noop, substage
 from .llm import structured
 from .models import Article, Curation, MarketQuote, Script, Turn, Weather
 
@@ -53,8 +56,36 @@ def build_brief(curation: Curation, articles: list[Article]) -> str:
     return "\n".join(parts)
 
 
-def generate_news(curation: Curation, articles: list[Article]) -> tuple[Script, str]:
+def persist_stories(curation: Curation, articles: list[Article]) -> None:
+    """Write stories.json: the source behind each pick, for the console.
+
+    Curation only records domain/title/reason; the console also wants the link,
+    the source host, the hydrated word count, and a snippet to match story turns
+    back to their source. `articles` are the hydrated picks.
+    """
+    by_title = {a.title: a for a in articles}
+    stories = []
+    for p in curation.picks:
+        art = by_title.get(p.title)
+        link = art.link if art else ""
+        content = art.content if art else ""
+        stories.append({
+            "domain": p.domain,
+            "title": p.title,
+            "reason": p.reason,
+            "link": link,
+            "source_host": urlparse(link).netloc.replace("www.", "") if link else "",
+            "words": len(content.split()),
+            "snippet": f"{p.title}. {content[:600]}",
+        })
+    PATHS.ensure()
+    PATHS.stories.write_text(json.dumps(stories, indent=2))
+
+
+def generate_news(curation: Curation, articles: list[Article],
+                  emit: Emitter = noop) -> tuple[Script, str]:
     print("Writing bulletin...")
+    persist_stories(curation, articles)
     brief = build_brief(curation, articles)
     script = structured(SYSTEM, brief, Script, temperature=0.6)
     for t in script.turns:
@@ -62,6 +93,7 @@ def generate_news(curation: Curation, articles: list[Article]) -> tuple[Script, 
     PATHS.script.write_text(script.model_dump_json(indent=2))
     words = sum(len(t.text.split()) for t in script.turns)
     print(f"  {len(script.turns)} news turns, ~{words} words")
+    emit(substage("write", f"{len(script.turns)} turns, ~{words} words"))
     return script, brief
 
 
@@ -99,6 +131,12 @@ def assemble(news: Script, quotes: list[MarketQuote], weather: Weather | None) -
             turns.append(extra)
     turns.append(Turn(speaker=ANCHOR.name, text="That is tonight's bulletin. Good night."))
     final = Script(turns=turns)
+    # Persist the exact structured figures so the console renders the markets
+    # table and weather chip from ground-truth numbers, not the spoken text.
+    PATHS.extras.write_text(json.dumps({
+        "markets": [q.model_dump() for q in quotes],
+        "weather": weather.model_dump() if weather else None,
+    }, indent=2))
     PATHS.script.write_text(final.model_dump_json(indent=2))
     words = sum(len(t.text.split()) for t in final.turns)
     print(f"  bulletin: {len(final.turns)} turns, ~{words} words (~{words/150:.1f} min)")

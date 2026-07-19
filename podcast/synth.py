@@ -12,6 +12,7 @@ import soundfile as sf
 
 from .config import (HOSTS, LUFS_TARGET, PATHS, SAMPLE_RATE, TTS_CFG_SCALE,
                      TTS_DDPM_STEPS, TTS_MODEL)
+from .events import Emitter, noop, substage
 from .models import Script
 
 
@@ -66,7 +67,7 @@ def _loudnorm(path) -> None:
         tmp.replace(path)
 
 
-def generate_audio(script: Script | None = None):
+def generate_audio(script: Script | None = None, emit: Emitter = noop):
     if script is None:
         script = Script.model_validate_json(PATHS.script.read_text())
 
@@ -74,14 +75,18 @@ def generate_audio(script: Script | None = None):
     from mlx_audio.tts.utils import load_model
 
     print(f"Loading {TTS_MODEL} ...")
+    emit(substage("synth", f"loading {TTS_MODEL.split('/')[-1]}"))
     model = load_model(TTS_MODEL)
 
-    print(f"Synthesizing {len(script.turns)} turns...")
+    n = len(script.turns)
+    print(f"Synthesizing {n} turns...")
+    emit(substage("synth", f"voicing {n} turns", i=0, n=n))
     t0 = time.perf_counter()
     segments: list[np.ndarray] = []
     for i, turn in enumerate(script.turns):
         host = HOSTS[turn.speaker]
         print(f"  {i + 1}/{len(script.turns)} {host.name}")
+        emit(substage("synth", f"turn {i + 1}/{n} · {host.name}", i=i + 1, n=n))
         # One turn at a time so each host's tempo can be applied to its own audio.
         parts = [
             np.asarray(r.audio)

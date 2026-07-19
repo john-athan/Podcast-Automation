@@ -3,6 +3,7 @@ strip or correct any claim the sources don't support (anti-fabrication guard).""
 from __future__ import annotations
 
 from .config import ANCHOR, PATHS, WEATHER
+from .events import Emitter, noop, substage
 from .llm import structured
 from .models import FactCheck, Script
 
@@ -19,8 +20,12 @@ For every sentence in the draft, verify it against the source material:
 Return the corrected turns, plus a short note for each claim you removed or fixed."""
 
 
-def fact_check(script: Script, brief: str) -> Script:
+def fact_check(script: Script, brief: str, emit: Emitter = noop) -> Script:
     print("Fact-checking against sources...")
+    # Snapshot the pre-check draft so the console can diff it against the
+    # corrected turns and show exactly what was struck out, per story.
+    PATHS.ensure()
+    PATHS.draft.write_text(script.model_dump_json(indent=2))
     draft = "\n".join(f"{t.speaker}: {t.text}" for t in script.turns)
     result = structured(
         SYSTEM,
@@ -38,8 +43,14 @@ def fact_check(script: Script, brief: str) -> Script:
         print(f"  {len(result.removed)} claims cut/corrected:")
         for note in result.removed[:12]:
             print(f"    - {note}")
+        emit(substage("verify", f"{len(result.removed)} claim(s) cut/corrected"))
     else:
         print("  no unsupported claims found")
+        emit(substage("verify", "no unsupported claims found"))
 
+    # Persist the corrected turns + the removal notes so the console can render
+    # the fact-check outcome (chips, notes) without re-running the model.
+    PATHS.factcheck.write_text(FactCheck(
+        turns=corrected.turns, removed=result.removed).model_dump_json(indent=2))
     PATHS.script.write_text(corrected.model_dump_json(indent=2))
     return corrected

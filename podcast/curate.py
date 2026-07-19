@@ -10,6 +10,7 @@ import re
 from difflib import SequenceMatcher
 
 from .config import PATHS
+from .events import Emitter, noop, substage
 from .llm import embed, structured
 from .models import Article, Curation, Selection
 
@@ -41,7 +42,7 @@ def _match(title: str, articles: list[Article]) -> Article | None:
     return best if score >= 0.6 else None
 
 
-def _dedupe(articles: list[Article]) -> list[Article]:
+def _dedupe(articles: list[Article], emit: Emitter = noop) -> list[Article]:
     """Drop near-duplicate stories (same event from two feeds) via embeddings."""
     vecs = embed([f"{a.title}. {a.content[:200]}" for a in articles])
     if len(vecs) != len(articles):
@@ -60,15 +61,18 @@ def _dedupe(articles: list[Article]) -> list[Article]:
         kept.append(art)
         kept_vecs.append(v)
     if len(kept) < len(articles):
-        print(f"  deduped {len(articles) - len(kept)} near-duplicate story(ies)")
+        dropped = len(articles) - len(kept)
+        print(f"  deduped {dropped} near-duplicate story(ies)")
+        emit(substage("curate", f"deduped {dropped} near-duplicate story(ies)"))
     return kept
 
 
-def curate(articles: list[Article] | None = None) -> tuple[Curation, list[Article]]:
+def curate(articles: list[Article] | None = None,
+           emit: Emitter = noop) -> tuple[Curation, list[Article]]:
     if articles is None:
         articles = [Article(**a) for a in json.loads(PATHS.content.read_text())]
 
-    articles = _dedupe(articles)
+    articles = _dedupe(articles, emit)
     catalogue = "\n".join(f"[{a.domain}] {a.title}" for a in articles)
     raw = structured(SYSTEM, catalogue, Curation, temperature=0.4)
 
@@ -96,6 +100,7 @@ def curate(articles: list[Article] | None = None) -> tuple[Curation, list[Articl
     PATHS.ensure()
     PATHS.curation.write_text(curation.model_dump_json(indent=2))
     print(f"Curated {len(curation.picks)} stories")
+    emit(substage("curate", f"{len(curation.picks)} stories chosen"))
     return curation, chosen
 
 

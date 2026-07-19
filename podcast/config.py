@@ -89,7 +89,15 @@ class Paths:
     @property
     def curation(self) -> Path: return self.out / "curation.json"
     @property
+    def stories(self) -> Path: return self.out / "stories.json"
+    @property
     def script(self) -> Path: return self.out / "script.json"
+    @property
+    def draft(self) -> Path: return self.out / "draft.json"
+    @property
+    def factcheck(self) -> Path: return self.out / "factcheck.json"
+    @property
+    def extras(self) -> Path: return self.out / "extras.json"
     @property
     def audio(self) -> Path: return self.out / "episode.wav"
 
