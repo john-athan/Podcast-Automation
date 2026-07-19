@@ -1,14 +1,12 @@
 [build-system]
-# Explicit build backend; setuptools floor set to the release that fixes
-# PYSEC-2026-3447. See https://osv.dev/vulnerability/PYSEC-2026-3447
-requires = ["setuptools>=83.0.0"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [project]
 name = "podcast-automation"
 version = "2.0.0"
 description = "Fully-local news-bulletin generator: RSS -> LM Studio script -> VibeVoice MLX audio."
-requires-python = ">=3.11"
+requires-python = ">=3.14"
 license = "MIT"
 dependencies = [
     "httpx>=0.27",
@@ -28,9 +26,24 @@ dependencies = [
 
 [project.optional-dependencies]
 publish = ["PyDrive2>=1.20"]   # Google Drive upload (optional)
+web = [                        # local web console
+    "fastapi>=0.110",
+    "uvicorn[standard]>=0.29",  # includes websockets for live progress
+]
 
 [project.scripts]
 podcast = "podcast.pipeline:main"
+podcast-web = "podcast.web.__main__:main"
 
-[tool.setuptools]
+[dependency-groups]
+# Dev tooling (PEP 735). Install with `uv sync` (included by default) or
+# skip with `uv sync --no-dev`.
+dev = ["ruff>=0.15"]
+
+[tool.hatch.build.targets.wheel]
+# Ships the whole `podcast` package, including podcast/web/static/* assets.
 packages = ["podcast"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py314"
