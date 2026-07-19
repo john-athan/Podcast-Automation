@@ -1,0 +1,30 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # NOTE: the project depends on mlx-audio (Apple Silicon / MLX only), which
+      # has no Linux wheels, so `pip install .` cannot succeed on ubuntu runners.
+      # This CI therefore runs an install-free smoke check: byte-compiling every
+      # source file catches syntax errors, and importing the top-level package
+      # (its __init__ pulls in no third-party deps) catches import-time breakage.
+      - name: Byte-compile all sources (syntax check)
+        run: python -m compileall -q podcast run.py
+
+      - name: Import top-level package
+        run: python -c "import podcast; print('podcast', podcast.__version__)"
