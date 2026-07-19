@@ -49,14 +49,16 @@ def _dedupe(articles: list[Article]) -> list[Article]:
     import math
     def cos(u, v):
         d = sum(x * y for x, y in zip(u, v))
-        nu = math.sqrt(sum(x * x for x in u)); nv = math.sqrt(sum(y * y for y in v))
+        nu = math.sqrt(sum(x * x for x in u))
+        nv = math.sqrt(sum(y * y for y in v))
         return d / (nu * nv) if nu and nv else 0.0
     kept: list[Article] = []
     kept_vecs: list[list[float]] = []
     for art, v in zip(articles, vecs):
         if any(cos(v, kv) >= DEDUP_THRESHOLD for kv in kept_vecs):
             continue
-        kept.append(art); kept_vecs.append(v)
+        kept.append(art)
+        kept_vecs.append(v)
     if len(kept) < len(articles):
         print(f"  deduped {len(articles) - len(kept)} near-duplicate story(ies)")
     return kept

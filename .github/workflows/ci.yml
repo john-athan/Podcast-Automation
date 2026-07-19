@@ -18,6 +18,9 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Lint
+        uses: astral-sh/ruff-action@v3
+
       # NOTE: the project depends on mlx-audio (Apple Silicon / MLX only), which
       # has no Linux wheels, so `pip install .` cannot succeed on ubuntu runners.
       # This CI therefore runs an install-free smoke check: byte-compiling every
