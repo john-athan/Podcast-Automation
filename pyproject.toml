@@ -1,3 +1,9 @@
+[build-system]
+# Explicit build backend; setuptools floor set to the release that fixes
+# PYSEC-2026-3447. See https://osv.dev/vulnerability/PYSEC-2026-3447
+requires = ["setuptools>=83.0.0"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "podcast-automation"
 version = "2.0.0"
@@ -14,6 +20,10 @@ dependencies = [
     "mlx-audio>=0.2",        # VibeVoice on Apple Silicon
     "soundfile>=0.12",
     "numpy>=1.26",
+    # Security floor for a transitive dependency: torch arrives via
+    # mlx-audio -> mlx-whisper. 2.13.0 is the release that fixes PYSEC-2025-194.
+    # See https://osv.dev/vulnerability/PYSEC-2025-194
+    "torch>=2.13.0",
 ]
 
 [project.optional-dependencies]
