@@ -1,14 +1,18 @@
 version: 2
 updates:
   # Python dependencies declared in pyproject.toml
+  # One PR for all Python updates — majors included.
   - package-ecosystem: "pip"
     directory: "/"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 1
     groups:
-      # One PR for all non-breaking (minor + patch) Python updates
-      pip-minor-and-patch:
+      pip-all:
+        patterns:
+          - "*"
         update-types:
+          - "major"
           - "minor"
           - "patch"
 
@@ -17,8 +21,13 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 1
     groups:
       # One PR for all GitHub Actions updates
       github-actions-all:
         patterns:
           - "*"
+        update-types:
+          - "major"
+          - "minor"
+          - "patch"
