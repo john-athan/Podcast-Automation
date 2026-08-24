@@ -84,7 +84,7 @@ async def main() -> int:
                                   + (f" ({ev['detail']})" if ev.get('detail') else ""))
                         if ev["type"] == "run_end":
                             break
-            except (asyncio.TimeoutError, TimeoutError):
+            except TimeoutError:
                 print("  (timed out waiting for run_end)")
 
         types = [e["type"] for e in events]

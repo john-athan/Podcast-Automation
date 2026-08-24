@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import httpx
 
-from .config import (MARKET_SYMBOLS, WEATHER_CITY, WEATHER_LAT, WEATHER_LON)
+from .config import MARKET_SYMBOLS, WEATHER_CITY, WEATHER_LAT, WEATHER_LON
 from .models import MarketQuote, Weather
 
 _UA = {"User-Agent": "Mozilla/5.0 (podcast-automation)"}

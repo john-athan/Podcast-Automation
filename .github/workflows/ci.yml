@@ -20,6 +20,11 @@ jobs:
 
       - name: Lint
         uses: astral-sh/ruff-action@v3
+        with:
+          # Keep in step with the `dev` pin in pyproject.toml. Left unset, the action
+          # resolves the `ruff>=0.15` range to `latest`, so a ruff release that widens
+          # the default rule set reddens main with no change to this repo.
+          version: "0.16.4"
 
       # NOTE: the project depends on mlx-audio (Apple Silicon / MLX only), which
       # has no Linux wheels, so `pip install .` cannot succeed on ubuntu runners.

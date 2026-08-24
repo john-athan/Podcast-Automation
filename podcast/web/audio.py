@@ -11,7 +11,7 @@ from pathlib import Path
 import numpy as np
 import soundfile as sf
 
-from ..config import LUFS_TARGET, PATHS, SAMPLE_RATE
+from ..config import LUFS_TARGET, PATHS
 
 _WAVE_BUCKETS = 96
 _cache: dict[str, tuple[float, object]] = {}
@@ -88,7 +88,7 @@ def _measure_lufs(path: Path) -> float | None:
         proc = subprocess.run(
             ["ffmpeg", "-hide_banner", "-nostats", "-i", str(path),
              "-af", "ebur128=framelog=quiet", "-f", "null", "-"],
-            capture_output=True, text=True, timeout=60,
+            capture_output=True, text=True, timeout=60, check=False,
         )
     except Exception:
         return None

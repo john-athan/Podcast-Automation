@@ -68,7 +68,7 @@ BOILERPLATE = re.compile(
 
 
 def sh(args: list[str], check: bool = True) -> str:
-    r = subprocess.run(args, capture_output=True, text=True)
+    r = subprocess.run(args, capture_output=True, text=True, check=False)
     if check and r.returncode != 0:
         raise SystemExit(f"command failed: {' '.join(args)}\n{r.stderr.strip()}")
     return r.stdout
@@ -327,9 +327,9 @@ def search(terms: list[str], lang: str | None) -> list[dict]:
         q += f" language:{lang}"
     r = subprocess.run(
         ["gh", "api", "-X", "GET", "search/code", "-f", f"q={q}",
-         "--jq", "{total: .total_count, items: [.items[]? | "
-                 "{repo: .repository.full_name, path: .path}]}"],
-        capture_output=True, text=True,
+         "--jq", ("{total: .total_count, items: [.items[]? | "
+                  "{repo: .repository.full_name, path: .path}]}")],
+        capture_output=True, text=True, check=False,
     )
     if r.returncode != 0:
         if "rate limit" in r.stderr.lower():

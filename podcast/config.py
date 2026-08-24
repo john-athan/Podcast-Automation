@@ -101,7 +101,7 @@ class Paths:
     @property
     def audio(self) -> Path: return self.out / "episode.wav"
 
-    def ensure(self) -> "Paths":
+    def ensure(self) -> Paths:
         self.out.mkdir(parents=True, exist_ok=True)
         return self
 

@@ -38,7 +38,9 @@ podcast-web = "podcast.web.__main__:main"
 [dependency-groups]
 # Dev tooling (PEP 735). Install with `uv sync` (included by default) or
 # skip with `uv sync --no-dev`.
-dev = ["ruff>=0.15"]
+# Pinned, not floored: CI lints with this exact version (see .github/workflows/ci.yml),
+# so a new ruff release cannot turn main red without a deliberate bump.
+dev = ["ruff==0.16.4"]
 
 [tool.hatch.build.targets.wheel]
 # Ships the whole `podcast` package, including podcast/web/static/* assets.
@@ -47,3 +49,12 @@ packages = ["podcast"]
 [tool.ruff]
 line-length = 100
 target-version = "py314"
+
+[tool.ruff.lint]
+# Every `except Exception` in this package is a deliberate degrade-don't-crash
+# boundary: a dead RSS feed, an unreachable LM Studio, a truncated WAV, a
+# disconnected websocket. None of them swallows the error silently; each logs,
+# reports it to the caller, or returns a sentinel the caller handles. Narrowing
+# them to specific types would turn a pipeline built to survive partial failure
+# into one that dies on an unanticipated errno.
+ignore = ["BLE001"]

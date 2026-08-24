@@ -7,7 +7,7 @@ from the real figures, so those numbers are always exact and never hallucinated.
 from __future__ import annotations
 
 import json
-from datetime import date
+from datetime import UTC, datetime
 from urllib.parse import urlparse
 
 from .config import ANCHOR, PATHS, WEATHER
@@ -47,7 +47,7 @@ SPOKEN-NUMBER RULES (this is read aloud):
 def build_brief(curation: Curation, articles: list[Article]) -> str:
     by_title = {a.title: a for a in articles}
     n = sum(1 for p in curation.picks if p.title in by_title)
-    parts = [f"TODAY: {date.today():%A, %B %d, %Y}", "",
+    parts = [f"TODAY: {datetime.now(tz=UTC).astimezone():%A, %B %d, %Y}", "",
              f"Write one story turn for EACH of these {n} stories (priority order):"]
     for i, p in enumerate(curation.picks, 1):
         art = by_title.get(p.title)

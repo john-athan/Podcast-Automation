@@ -10,8 +10,7 @@ import time
 import numpy as np
 import soundfile as sf
 
-from .config import (HOSTS, LUFS_TARGET, PATHS, SAMPLE_RATE, TTS_CFG_SCALE,
-                     TTS_DDPM_STEPS, TTS_MODEL)
+from .config import HOSTS, LUFS_TARGET, PATHS, SAMPLE_RATE, TTS_CFG_SCALE, TTS_DDPM_STEPS, TTS_MODEL
 from .events import Emitter, noop, substage
 from .models import Script
 
@@ -24,7 +23,7 @@ def sanitize_for_tts(text: str) -> str:
     """
     t = text
     t = re.sub(r"\$\s?([\d,]+(?:\.\d+)?)\s*(million|billion|trillion)",
-               r"\1 \2 dollars", t, flags=re.I)   # $5.28 million -> 5.28 million dollars
+               r"\1 \2 dollars", t, flags=re.IGNORECASE)   # $5.28 million -> 5.28 million dollars
     t = re.sub(r"\$\s?([\d,]+(?:\.\d+)?)", r"\1 dollars", t)  # $1,000 -> 1,000 dollars
     t = t.replace("%", " percent")
     t = t.replace("&", " and ")

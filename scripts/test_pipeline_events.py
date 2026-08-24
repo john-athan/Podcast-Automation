@@ -13,7 +13,19 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from podcast import config, curate, extras, hydrate, ingest, llm, pipeline, publish, synth, verify, write
+from podcast import (
+    config,
+    curate,
+    extras,
+    hydrate,
+    ingest,
+    llm,
+    pipeline,
+    publish,
+    synth,
+    verify,
+    write,
+)
 from podcast.events import STAGE_KEYS
 from podcast.models import Article, Curation, MarketQuote, Script, Selection, Turn, Weather
 
@@ -122,7 +134,6 @@ def main() -> int:
 
     # now exercise the state builder end-to-end on these artifacts
     from podcast.web import state
-    saved = config.PATHS.out
     st = state.build_state()
     cut_segs = [s for s in st["segments"] if s["cut_count"] > 0]
     assert cut_segs, "state builder found no struck-out claims"

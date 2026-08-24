@@ -5,23 +5,21 @@ Structured output via json_schema. The writer model is loaded on demand
 """
 from __future__ import annotations
 
+import contextlib
 import shutil
 import subprocess
-from typing import Type, TypeVar
 
 from openai import OpenAI
 from pydantic import BaseModel
 
 from .config import LMSTUDIO_API_TOKEN, LMSTUDIO_BASE_URL, WRITER_MODEL
 
-T = TypeVar("T", bound=BaseModel)
-
 _client = OpenAI(base_url=LMSTUDIO_BASE_URL, api_key=LMSTUDIO_API_TOKEN)
 _LMS = shutil.which("lms") or f"{__import__('os').path.expanduser('~')}/.lmstudio/bin/lms"
 
 
-def structured(system: str, user: str, schema: Type[T],
-               temperature: float = 0.7, max_tokens: int = 8192) -> T:
+def structured[T: BaseModel](system: str, user: str, schema: type[T],
+                             temperature: float = 0.7, max_tokens: int = 8192) -> T:
     """One structured-output chat call, validated into `schema`.
 
     max_tokens is generous by default: the writer is a reasoning model, so the
@@ -74,8 +72,6 @@ def embed(texts: list[str]) -> list[list[float]]:
 
 def unload_all() -> None:
     """Free VRAM/RAM so VibeVoice has room. Best-effort."""
-    try:
+    with contextlib.suppress(Exception):
         subprocess.run([_LMS, "unload", "--all"], check=False,
                        capture_output=True, timeout=30)
-    except Exception:
-        pass

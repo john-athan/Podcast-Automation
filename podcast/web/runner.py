@@ -18,7 +18,7 @@ from ..events import STAGE_KEYS, stage
 class _LogTee:
     """Forward stdout lines to the event queue (and the real stdout too)."""
 
-    def __init__(self, queue: "Queue", stream):
+    def __init__(self, queue: Queue, stream):
         self.queue, self.stream, self._buf = queue, stream, ""
 
     def write(self, s: str) -> int:
@@ -34,7 +34,7 @@ class _LogTee:
         self.stream.flush()
 
 
-def _worker(queue: "Queue", mode: str) -> None:
+def _worker(queue: Queue, mode: str) -> None:
     def emit(ev: dict) -> None:
         queue.put(ev)
 

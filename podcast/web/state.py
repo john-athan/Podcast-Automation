@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import json
 import re
-from datetime import datetime
+from datetime import UTC, datetime
 from difflib import SequenceMatcher
 from pathlib import Path
 
@@ -69,7 +69,7 @@ def _classify(i: int, turn, n: int) -> str:
         return "signoff"
     if i == 0:
         return "greeting"
-    if i == 1 and re.search(r"top stor|coming up|headline", text, re.I):
+    if i == 1 and re.search(r"top stor|coming up|headline", text, re.IGNORECASE):
         return "teasers"
     return "story"
 
@@ -123,11 +123,13 @@ def _build_diffs(script: Script) -> dict[int, dict]:
     return out
 
 
-_STOP = set(
-    "the a an and or of to in for on with is are was were be by from at as it its "
-    "into this that these those has have had will would can could their they them "
-    "our we you your news today tonight story stories report reports said says also "
-    "more most some such other".split())
+_STOP = {
+    "the", "a", "an", "and", "or", "of", "to", "in", "for", "on", "with", "is", "are", "was",
+    "were", "be", "by", "from", "at", "as", "it", "its", "into", "this", "that", "these",
+    "those", "has", "have", "had", "will", "would", "can", "could", "their", "they", "them",
+    "our", "we", "you", "your", "news", "today", "tonight", "story", "stories", "report",
+    "reports", "said", "says", "also", "more", "most", "some", "such", "other",
+}
 
 
 def _toks(s: str) -> set[str]:
@@ -251,7 +253,7 @@ def build_state() -> dict:
     meta = audio.audio_meta()
     est = meta["duration_s"] if meta.get("exists") else round(total_words / 2.5, 0)
     mtime = PATHS.script.stat().st_mtime
-    ep_date = datetime.fromtimestamp(mtime)
+    ep_date = datetime.fromtimestamp(mtime, tz=UTC).astimezone()
     fc = diffs.get(-1)
     return {
         "episode": {

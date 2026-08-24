@@ -6,7 +6,7 @@ dicts so they cross a multiprocessing.Queue to the web server unchanged.
 """
 from __future__ import annotations
 
-from typing import Callable
+from collections.abc import Callable
 
 # Canonical pipeline stages: (key, label, one-line description).
 # The web tally is built from this list, so order here is the order shown.
