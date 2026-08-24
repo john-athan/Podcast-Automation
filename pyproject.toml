@@ -25,7 +25,16 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-publish = ["PyDrive2>=1.20"]   # Google Drive upload (optional)
+publish = [                    # Google Drive upload (optional)
+    # Not PyDrive2: its final release (1.21.3) caps cryptography<44 and
+    # pyopenssl<=24.2.1, pinning both to versions with known CVEs.
+    "google-api-python-client>=2.198",
+    "google-auth-oauthlib>=1.2",
+    # Security floor for a transitive dependency: cryptography arrives via
+    # google-api-python-client -> google-api-core -> google-auth. 49.0.0 is the
+    # release that clears the last of PYSEC-2026-1284/2141/35/3553/3554.
+    "cryptography>=49.0.0",
+]
 web = [                        # local web console
     "fastapi>=0.110",
     "uvicorn[standard]>=0.29",  # includes websockets for live progress

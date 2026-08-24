@@ -164,3 +164,8 @@ cython_debug/
 # generated episodes
 output/
 .venv/
+
+# Google Drive OAuth: client_secrets.json is the app credential, token.json is a
+# live refresh token. Neither belongs in the repo.
+client_secrets.json
+token.json

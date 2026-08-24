@@ -129,6 +129,13 @@ uv run python scripts/test_web_live.py           # endpoints + WebSocket + run l
 Set `PUBLISH=1` plus Drive/SMTP vars in `.env` to upload the episode to Google
 Drive and email the link.
 
+Drive auth uses an OAuth "Desktop app" client: download its JSON from the Google
+Cloud console to `client_secrets.json` (or point `GOOGLE_CLIENT_SECRETS` at it).
+The first publish opens a browser once and caches the refresh token in
+`GOOGLE_TOKEN_FILE` (default `token.json`, written 0600); later runs are silent.
+The requested scope is `drive.file`, so the app only ever sees files it created.
+Set `GDRIVE_FOLDER_ID` to upload into a specific folder.
+
 ## Config knobs (`.env`)
 
 | Var | Default | Notes |

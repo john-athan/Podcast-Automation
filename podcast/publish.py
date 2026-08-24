@@ -4,6 +4,13 @@ Both are opt-in (env-gated) and fixed vs. the legacy code:
  - Drive auth is lazy (no browser popup on import).
  - email_link takes the real link (legacy called it with no args -> crash).
 Not LLM/model related; pure file hosting + notification.
+
+Uses the Google API client directly rather than PyDrive2. PyDrive2 1.21.3 (its
+final release) caps `cryptography<44` and `pyopenssl<=24.2.1`, which are exactly
+the versions carrying PYSEC-2026-1284/2141/35/3553/3554 and PYSEC-2026-2268/2269
+(the last a 9.8). Those caps made the advisories unfixable by upgrading, so the
+dependency had to go; without it cryptography resolves current and pyopenssl
+drops out of the graph entirely.
 """
 from __future__ import annotations
 
@@ -15,24 +22,80 @@ from pathlib import Path
 
 from .config import PATHS
 
+# Only files this app itself creates, rather than PyDrive2's default of full
+# read/write over the whole Drive. Uploading is all this module ever does.
+_SCOPES = ["https://www.googleapis.com/auth/drive.file"]
+
+_CLIENT_SECRETS = Path(os.getenv("GOOGLE_CLIENT_SECRETS", "client_secrets.json"))
+_TOKEN_FILE = Path(os.getenv("GOOGLE_TOKEN_FILE", "token.json"))
+
+
+def _credentials():
+    """Cached OAuth credentials, running the installed-app flow only when needed."""
+    from google.auth.transport.requests import Request
+    from google.oauth2.credentials import Credentials
+    from google_auth_oauthlib.flow import InstalledAppFlow
+
+    creds = None
+    if _TOKEN_FILE.exists():
+        creds = Credentials.from_authorized_user_file(str(_TOKEN_FILE), _SCOPES)
+
+    if creds and creds.valid:
+        return creds
+
+    if creds and creds.expired and creds.refresh_token:
+        creds.refresh(Request())
+    else:
+        if not _CLIENT_SECRETS.exists():
+            raise FileNotFoundError(
+                f"{_CLIENT_SECRETS} not found. Download an OAuth client (type "
+                '"Desktop app") from the Google Cloud console, or point '
+                "GOOGLE_CLIENT_SECRETS at it."
+            )
+        flow = InstalledAppFlow.from_client_secrets_file(str(_CLIENT_SECRETS), _SCOPES)
+        # port=0 lets the OS pick, so a stale redirect port cannot wedge the flow.
+        creds = flow.run_local_server(port=0)
+
+    # Persisting the refresh token is what keeps this to one browser prompt ever;
+    # 0o600 because the file is a live credential.
+    _TOKEN_FILE.write_text(creds.to_json())
+    _TOKEN_FILE.chmod(0o600)
+    return creds
+
 
 def _drive():
-    from pydrive2.auth import GoogleAuth
-    from pydrive2.drive import GoogleDrive
-    gauth = GoogleAuth()
-    gauth.LocalWebserverAuth()
-    return GoogleDrive(gauth)
+    from googleapiclient.discovery import build
+
+    # cache_discovery=False: the file cache needs oauth2client, which is not a
+    # dependency here and only emits a warning when missing.
+    return build("drive", "v3", credentials=_credentials(), cache_discovery=False)
 
 
 def upload_to_drive(*files: Path) -> dict[str, str]:
+    """Upload each file, returning {filename: shareable link}."""
+    from googleapiclient.http import MediaFileUpload
+
     drive = _drive()
+    folder = os.getenv("GDRIVE_FOLDER_ID")
     links: dict[str, str] = {}
+
     for fp in files:
-        f = drive.CreateFile({"title": fp.name})
-        f.SetContentFile(str(fp))
-        f.Upload()
-        links[fp.name] = f["id"]
-        print(f"  uploaded {fp.name}: {f['id']}")
+        body: dict[str, object] = {"name": fp.name}
+        if folder:
+            body["parents"] = [folder]
+        # resumable: episode audio is large enough that a plain upload is a
+        # single point of failure on a flaky connection.
+        media = MediaFileUpload(str(fp), resumable=True)
+        created = (
+            drive.files()
+            .create(body=body, media_body=media, fields="id, webViewLink")
+            .execute()
+        )
+        # webViewLink is what a human can actually open; the legacy code put the
+        # bare file id into the email, which was never a link.
+        link = created.get("webViewLink") or f"https://drive.google.com/file/d/{created['id']}/view"
+        links[fp.name] = link
+        print(f"  uploaded {fp.name}: {link}")
     return links
 
 
