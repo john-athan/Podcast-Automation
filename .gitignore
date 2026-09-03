@@ -169,3 +169,4 @@ output/
 # live refresh token. Neither belongs in the repo.
 client_secrets.json
 token.json
+.DS_Store

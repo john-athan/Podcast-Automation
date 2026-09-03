@@ -1,5 +1,12 @@
 name: CI
 
+# A caller, never a container. The checks live in tools/validate.sh, so the same
+# ones run here and on the machine this is developed on, with `oss check
+# Podcast-Automation`. That matters more here than anywhere else in the fleet:
+# mlx-audio has no Linux wheels, so this runner can only prove the sources parse
+# and the package imports. The script knows that and does more where more is
+# possible.
+
 on:
   push:
     branches: [main]
@@ -8,31 +15,15 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  smoke:
+  validate:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-
-      - uses: actions/setup-python@v7
-        with:
-          python-version: "3.12"
-
-      - name: Lint
-        uses: astral-sh/ruff-action@v3
-        with:
-          # Keep in step with the `dev` pin in pyproject.toml. Left unset, the action
-          # resolves the `ruff>=0.15` range to `latest`, so a ruff release that widens
-          # the default rule set reddens main with no change to this repo.
-          version: "0.16.4"
-
-      # NOTE: the project depends on mlx-audio (Apple Silicon / MLX only), which
-      # has no Linux wheels, so `pip install .` cannot succeed on ubuntu runners.
-      # This CI therefore runs an install-free smoke check: byte-compiling every
-      # source file catches syntax errors, and importing the top-level package
-      # (its __init__ pulls in no third-party deps) catches import-time breakage.
-      - name: Byte-compile all sources (syntax check)
-        run: python -m compileall -q podcast run.py
-
-      - name: Import top-level package
-        run: python -c "import podcast; print('podcast', podcast.__version__)"
+      - uses: astral-sh/setup-uv@v7
+      - name: Validate
+        run: tools/validate.sh
