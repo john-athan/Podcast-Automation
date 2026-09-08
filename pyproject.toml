@@ -49,7 +49,7 @@ podcast-web = "podcast.web.__main__:main"
 # skip with `uv sync --no-dev`.
 # Pinned, not floored: CI lints with this exact version (see .github/workflows/ci.yml),
 # so a new ruff release cannot turn main red without a deliberate bump.
-dev = ["ruff==0.16.4"]
+dev = ["ruff==0.16.5"]
 
 [tool.hatch.build.targets.wheel]
 # Ships the whole `podcast` package, including podcast/web/static/* assets.
