@@ -11,25 +11,29 @@ from .config import ENTRIES_PER_FEED, PATHS, RSS_FEEDS
 from .models import Article
 
 
+def _parse_entry(domain: str, entry) -> Article:
+    # `entry.get("content", default)` only falls back when the key is absent;
+    # some feeds set it to an empty list, which used to blow up the `[0]`
+    # index below and crash the whole feed. `or` catches that case too.
+    content = entry.get("content") or [{"value": entry.get("summary", "")}]
+    body = content[0].get("value", "") if content else ""
+    return Article(
+        domain=domain,
+        title=entry.get("title", "").strip(),
+        content=body,
+        link=entry.get("link", ""),
+    )
+
+
 async def _fetch_feed(client: httpx.AsyncClient, domain: str, url: str) -> list[Article]:
     try:
         resp = await client.get(url, timeout=15.0, follow_redirects=True)
         resp.raise_for_status()
-    except Exception as exc:  # one dead feed shouldn't kill the run
+        feed = feedparser.parse(resp.content)
+        return [_parse_entry(domain, e) for e in feed.entries[:ENTRIES_PER_FEED]]
+    except Exception as exc:  # one dead or malformed feed shouldn't kill the run
         print(f"  ! skip {url}: {exc}")
         return []
-
-    feed = feedparser.parse(resp.content)
-    out: list[Article] = []
-    for entry in feed.entries[:ENTRIES_PER_FEED]:
-        body = entry.get("content", [{"value": entry.get("summary", "")}])[0]["value"]
-        out.append(Article(
-            domain=domain,
-            title=entry.get("title", "").strip(),
-            content=body,
-            link=entry.get("link", ""),
-        ))
-    return out
 
 
 async def _gather() -> list[Article]:

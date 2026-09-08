@@ -105,11 +105,13 @@ Every run is a normal `podcast.pipeline.run` in a child process (so its RAM is
 reclaimed on exit and `.env` is reloaded); the CLI and console share the exact
 same stage code.
 
-Two verification scripts cover the wiring without needing the local models:
+Three verification scripts cover the wiring without needing the local models:
 
 ```sh
-uv run python scripts/test_pipeline_events.py   # orchestration + events + persistence (mocked stages)
-uv run podcast-web &                             # then, against the running server:
+uv run python scripts/test_ingest.py             # RSS entry parsing (malformed feeds)
+uv run python scripts/test_publish.py            # Drive upload path (mocked, no account needed)
+uv run python scripts/test_pipeline_events.py    # orchestration + events + persistence (mocked stages)
+WEB_PORT=8765 uv run podcast-web &               # then, against the running server:
 uv run python scripts/test_web_live.py           # endpoints + WebSocket + run lifecycle
 ```
 
