@@ -43,6 +43,6 @@ anything else in this file.
 
 ## Reviewed and cleared
 
-Nothing yet. Findings from `scripts/provenance-check.py` that turn out to be
-convergent output rather than copying belong here, with the date and the
+Nothing yet. Findings from `oss provenance Podcast-Automation` that turn out to
+be convergent output rather than copying belong here, with the date and the
 reasoning.
