@@ -96,7 +96,38 @@ def upload_to_drive(*files: Path) -> dict[str, str]:
         link = created.get("webViewLink") or f"https://drive.google.com/file/d/{created['id']}/view"
         links[fp.name] = link
         print(f"  uploaded {fp.name}: {link}")
+        _share_with_recipient(drive, created["id"])
     return links
+
+
+def _share_with_recipient(drive, file_id: str) -> None:
+    """Let the person the link is emailed to actually open it.
+
+    A file created by this app is private to the Drive account that uploaded it,
+    so a `webViewLink` sent to anyone else opens a request-access page. The
+    episode arrives as a link they cannot use, and nothing says why.
+
+    Granted to the one address in RECIPIENT_EMAIL, as a reader, and not by
+    making the file link-visible. "Anyone with the link" would fix the same
+    symptom by publishing the episode to whoever ever sees the URL, which is a
+    larger thing to do than the problem asks for.
+
+    Fails soft: the upload has already succeeded by this point, and a sharing
+    error is worth a line on the console rather than losing the episode. Sharing
+    with the owner's own address is one of the errors it swallows.
+    """
+    recipient = os.getenv("RECIPIENT_EMAIL")
+    if not recipient:
+        return
+    try:
+        drive.permissions().create(
+            fileId=file_id,
+            body={"type": "user", "role": "reader", "emailAddress": recipient},
+            sendNotificationEmail=False,
+        ).execute()
+        print(f"  shared with {recipient}")
+    except Exception as e:  # a sharing failure must not lose the upload
+        print(f"  could not share with {recipient}: {e}")
 
 
 def email_link(link: str) -> None:
