@@ -1,5 +1,5 @@
 "use strict";
-// Bulletin Desk console — talks to the FastAPI backend and streams live run
+// Bulletin Desk console, talks to the FastAPI backend and streams live run
 // progress over a WebSocket. All episode data comes from /api/state.
 
 const $ = (s) => document.querySelector(s);
@@ -69,7 +69,7 @@ function renderPipeline() {
     const sub = st.sub || st.detail || s.desc;
     li.innerHTML = `<span class="node">${node}</span>`
       + `<span><span class="lab">${esc(s.label)}</span><span class="sub">${esc(sub)}</span></span>`
-      + `<span class="ms mono">${st.elapsed != null ? fmtElapsed(st.elapsed) : (status === "live" || status === "running" ? "…" : "—")}</span>`;
+      + `<span class="ms mono">${st.elapsed != null ? fmtElapsed(st.elapsed) : (status === "live" || status === "running" ? "…" : "-")}</span>`;
     ul.appendChild(li);
   });
 }
@@ -89,7 +89,7 @@ function renderTally() {
   if (running) {
     tally.className = "tally live";
     const lab = currentStageLabel();
-    txt.textContent = "ON AIR — " + (lab ? lab.toUpperCase() : (RUN.mode === "synth" ? "SYNTH" : "RUN"));
+    txt.textContent = "ON AIR: " + (lab ? lab.toUpperCase() : (RUN.mode === "synth" ? "SYNTH" : "RUN"));
   } else {
     tally.className = "tally";
     txt.textContent = RUN && RUN.result === "error" ? "ERROR"
@@ -124,9 +124,9 @@ async function act(url, okMsg) {
 
 // ---- running order --------------------------------------------------------
 function renderMeta() {
-  $("#epId").textContent = ST && ST.episode ? "EP " + ST.episode.id : "—";
+  $("#epId").textContent = ST && ST.episode ? "EP " + ST.episode.id : "-";
   const m = $("#roMeta");
-  if (!ST || !ST.episode) { m.innerHTML = '<span>No episode yet — run the bulletin.</span>'; return; }
+  if (!ST || !ST.episode) { m.innerHTML = '<span>No episode yet, run the bulletin.</span>'; return; }
   const e = ST.episode;
   const anchor = ST.voices.find((v) => v.role === "Anchor");
   const weather = ST.voices.find((v) => v.role === "Weather");
@@ -148,7 +148,7 @@ function renderFcSummary() {
   if (!notes.length) return;
   const div = document.createElement("div");
   div.className = "fc-summary";
-  div.innerHTML = `<h3>Fact-check — ${ST.fact_check.total_cut} claim(s) cut</h3>`
+  div.innerHTML = `<h3>Fact-check, ${ST.fact_check.total_cut} claim(s) cut</h3>`
     + "<ul>" + notes.map((n) => `<li>${esc(n)}</li>`).join("") + "</ul>";
   box.appendChild(div);
 }
@@ -231,7 +231,7 @@ function renderSegments() {
     if (seg.kind === "markets") {
       const cap = document.createElement("div");
       cap.className = "src";
-      cap.textContent = "Numbers pulled from Yahoo Finance at run time — exact, never written by the model.";
+      cap.textContent = "Numbers pulled from Yahoo Finance at run time, exact, never written by the model.";
       bd.appendChild(cap);
     }
 
@@ -317,11 +317,11 @@ function renderWaveform(peaks) {
 function renderOutput() {
   const o = ST && ST.output;
   const kv = $("#outMeta");
-  const ddpm = CFG ? (CFG.fields.find((f) => f.key === "ddpm_steps") || {}).value : "—";
+  const ddpm = CFG ? (CFG.fields.find((f) => f.key === "ddpm_steps") || {}).value : "-";
   if (!o || !o.exists) {
     $("#playBtn").disabled = true;
     $("#dur").textContent = "00:00";
-    $("#lufsVal").textContent = "—";
+    $("#lufsVal").textContent = "-";
     $("#lufsMask").style.width = "100%";
     kv.innerHTML = `<dt>DDPM steps</dt><dd>${ddpm}</dd>`;
     return;
@@ -497,7 +497,7 @@ function renderHealth() {
   if (!lm.ok) {
     parts.push(`<div class="banner warn"><span class="ico">⚠</span><div class="body">`
       + `<h3>LM Studio is offline</h3>`
-      + `<p>The writer stages — <b>Curate</b>, <b>Write</b>, <b>Verify</b> — call a local LLM at `
+      + `<p>The writer stages, <b>Curate</b>, <b>Write</b>, <b>Verify</b>, call a local LLM at `
       + `<code>${esc(lm.url || "")}</code>. Start LM Studio's local server (port 1234) and load `
       + `<code>${esc(lm.writer || "")}</code>, then run again.</p>`
       + `<div class="re"><button data-recheck>Recheck</button></div></div></div>`);
@@ -555,7 +555,7 @@ function connectWS() {
         refreshHealth();
         if (ev.type === "run_error") {
           const m = (ev.message || "").toLowerCase();
-          if (m.includes("connect")) toast("LM Studio offline — see the banner", true);
+          if (m.includes("connect")) toast("LM Studio offline, see the banner", true);
           else toast(ev.message || "run failed", true);
         }
         if (ev.type === "run_done") toast("Bulletin ready");

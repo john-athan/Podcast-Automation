@@ -243,7 +243,7 @@ def build_state() -> dict:
             seg["data"] = True
         elif kind == "weather":
             city = (extras.get("weather") or {}).get("city", WEATHER_CITY)
-            seg["label"], seg["sublabel"] = f"Weather — {city}", "Deterministic · Open-Meteo"
+            seg["label"], seg["sublabel"] = f"Weather: {city}", "Deterministic · Open-Meteo"
             seg["weather"] = extras.get("weather")
             seg["data"] = True
         else:  # signoff

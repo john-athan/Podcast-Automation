@@ -26,6 +26,9 @@ python3 -m compileall -q podcast run.py && echo "ok" || fail=1
 step "Import the top-level package"
 python3 -c "import podcast; print('podcast', podcast.__version__)" || fail=1
 
+step "Source pages stay on the data side of the prompt"
+uv run python tests/test_fence.py || fail=1
+
 if [ "$(uname -sm)" = "Darwin arm64" ]; then
   step "Apple Silicon: resolve the real dependency tree"
   uv sync --frozen --quiet && echo "ok, environment resolves" || fail=1

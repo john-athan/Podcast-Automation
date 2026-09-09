@@ -1,7 +1,7 @@
 version: 2
 updates:
   # Python dependencies declared in pyproject.toml
-  # One PR for all Python updates — majors included.
+  # One PR for all Python updates, majors included.
   - package-ecosystem: "pip"
     directory: "/"
     schedule:

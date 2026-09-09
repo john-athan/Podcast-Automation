@@ -1,5 +1,5 @@
 """Local extras for the bulletin: Munich weather + markets brief.
-Both keyless HTTP (Open-Meteo, Yahoo Finance) — same category as the RSS fetch."""
+Both keyless HTTP (Open-Meteo, Yahoo Finance), same category as the RSS fetch."""
 from __future__ import annotations
 
 import httpx

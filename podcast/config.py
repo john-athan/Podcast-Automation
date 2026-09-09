@@ -1,4 +1,4 @@
-"""Central config. Everything local — no cloud LLM/TTS."""
+"""Central config. Everything local, no cloud LLM/TTS."""
 from __future__ import annotations
 
 import os
