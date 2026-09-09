@@ -23,9 +23,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from podcast import publish as P
 
 
-def _fake_service(response: dict) -> tuple[MagicMock, dict]:
-    """A stand-in Drive service that records the create() call it was given."""
-    seen: dict = {}
+def _fake_service(response: dict, share_raises: Exception | None = None) -> tuple[MagicMock, dict]:
+    """A stand-in Drive service recording the create() and permissions() calls."""
+    seen: dict = {"shared": []}
 
     def create(body, media_body, fields):
         seen["body"], seen["fields"] = body, fields
@@ -33,8 +33,16 @@ def _fake_service(response: dict) -> tuple[MagicMock, dict]:
         call.execute.return_value = response
         return call
 
+    def share(fileId, body, sendNotificationEmail):
+        seen["shared"].append((fileId, body, sendNotificationEmail))
+        call = MagicMock()
+        if share_raises is not None:
+            call.execute.side_effect = share_raises
+        return call
+
     svc = MagicMock()
     svc.files.return_value.create.side_effect = create
+    svc.permissions.return_value.create.side_effect = share
     return svc, seen
 
 
@@ -103,6 +111,38 @@ def main() -> int:
         assert "Desktop app" in str(exc), str(exc)
     else:
         raise AssertionError("missing client_secrets did not raise")
+
+    # The recipient has to be able to open what they are emailed. A file this
+    # app creates is private to the uploading account, so without this the link
+    # is a request-access page.
+    svc, seen = _fake_service(full)
+    with patch.object(P, "_drive", return_value=svc), \
+         patch.dict(os.environ, {"RECIPIENT_EMAIL": "someone@example.com"}):
+        P.upload_to_drive(audio)
+    assert len(seen["shared"]) == 1, seen["shared"]
+    file_id, body, notify = seen["shared"][0]
+    assert file_id == "FILEID123", file_id
+    assert body == {"type": "user", "role": "reader",
+                    "emailAddress": "someone@example.com"}, body
+    assert notify is False, "Drive's own mail would duplicate the episode email"
+
+    # Narrow on purpose: one named reader, never "anyone with the link".
+    assert body["type"] != "anyone", body
+    assert body["role"] == "reader", body
+
+    # No recipient configured means nothing is shared with anybody.
+    svc, seen = _fake_service(full)
+    with patch.object(P, "_drive", return_value=svc):
+        os.environ.pop("RECIPIENT_EMAIL", None)
+        P.upload_to_drive(audio)
+    assert seen["shared"] == [], seen["shared"]
+
+    # A sharing failure must not lose an upload that already succeeded.
+    svc, seen = _fake_service(full, share_raises=RuntimeError("insufficientPermissions"))
+    with patch.object(P, "_drive", return_value=svc), \
+         patch.dict(os.environ, {"RECIPIENT_EMAIL": "someone@example.com"}):
+        links = P.upload_to_drive(audio)
+    assert links["episode.wav"] == full["webViewLink"], links
 
     print("\nALL PUBLISH ASSERTIONS PASSED")
     return 0

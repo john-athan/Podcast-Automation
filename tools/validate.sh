@@ -35,6 +35,12 @@ if [ "$(uname -sm)" = "Darwin arm64" ]; then
 
   step "Apple Silicon: import the modules that need mlx-audio"
   uv run python -c "import podcast; print('full import ok')" || fail=1
+
+  # Needs the `publish` extra for googleapiclient, which the default sync does
+  # not install, so it sits with the other checks that only run here. It was
+  # written for the PyDrive2 migration and then run by nothing.
+  step "The Drive publish path, mocked"
+  uv run --extra publish python scripts/test_publish.py || fail=1
 else
   printf '\n(not Apple Silicon: skipping the checks that need mlx-audio)\n'
 fi
