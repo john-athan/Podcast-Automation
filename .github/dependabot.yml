@@ -6,6 +6,9 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+      day: "sunday"
+      time: "06:00"
+      timezone: "Europe/Berlin"
     open-pull-requests-limit: 1
     groups:
       pip-all:
@@ -21,6 +24,9 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+      day: "sunday"
+      time: "06:00"
+      timezone: "Europe/Berlin"
     open-pull-requests-limit: 1
     groups:
       # One PR for all GitHub Actions updates
