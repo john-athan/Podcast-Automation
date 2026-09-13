@@ -138,6 +138,11 @@ The first publish opens a browser once and caches the refresh token in
 The requested scope is `drive.file`, so the app only ever sees files it created.
 Set `GDRIVE_FOLDER_ID` to upload into a specific folder.
 
+Each uploaded file is also shared with `RECIPIENT_EMAIL` as a reader, so the
+link that gets emailed actually opens for them instead of landing on a
+request-access page. A sharing failure does not lose the upload, it just
+prints a warning.
+
 ## Config knobs (`.env`)
 
 | Var | Default | Notes |
