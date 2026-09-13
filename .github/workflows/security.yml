@@ -6,8 +6,9 @@ on:
   pull_request:
     branches: [main]
   schedule:
-    # Weekly, Mondays 12:30 UTC
-    - cron: "30 12 * * 1"
+    # Weekly, Sundays 03:47 UTC, finished before the 06:00 Berlin
+    # Dependabot window so Sunday morning shows scans and PRs together.
+    - cron: "47 3 * * 0"
 
 permissions:
   # Required by the reusable workflows to upload results to code scanning.
