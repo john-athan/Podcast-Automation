@@ -105,7 +105,7 @@ Every run is a normal `podcast.pipeline.run` in a child process (so its RAM is
 reclaimed on exit and `.env` is reloaded); the CLI and console share the exact
 same stage code.
 
-Three verification scripts cover the wiring without needing the local models:
+Four verification scripts cover the wiring without needing the local models:
 
 ```sh
 uv run python scripts/test_ingest.py             # RSS entry parsing (malformed feeds)
@@ -150,6 +150,7 @@ prints a warning.
 | `WRITER_MODEL` | `qwen3.5-9b-mlx` | any LM Studio model; `qwen3.5-4b-mlx` is lighter |
 | `TTS_MODEL` | `mlx-community/VibeVoice-Realtime-0.5B-fp16` | |
 | `TTS_DDPM_STEPS` | `20` | higher = better quality, slower |
+| `TTS_CFG_SCALE` | `1.5` | classifier-free guidance strength for VibeVoice |
 | `ANCHOR_VOICE` / `WEATHER_VOICE` | `en-Frank_man` / `en-Emma_woman` | bundled VibeVoice caches |
 | `SPEED_ANCHOR` / `SPEED_WEATHER` | `0.92` / `1.10` | tempo, pitch-preserving; >1 = faster |
 | `WEATHER_CITY` / `WEATHER_LAT` / `WEATHER_LON` | `Munich` / `48.137` / `11.575` | weather segment |

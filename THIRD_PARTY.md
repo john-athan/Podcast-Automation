@@ -21,7 +21,9 @@ the pipeline pulls in is worth more than the obligation would be.
 | soundfile | BSD-3-Clause |
 | numpy | BSD-3-Clause |
 | torch | BSD-3-Clause |
-| PyDrive2 (extra: `publish`) | Apache-2.0 |
+| google-api-python-client (extra: `publish`) | Apache-2.0 |
+| google-auth-oauthlib (extra: `publish`) | Apache-2.0 |
+| cryptography (extra: `publish`) | Apache-2.0 OR BSD-3-Clause |
 
 ## Models and generated audio
 

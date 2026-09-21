@@ -141,7 +141,11 @@ def email_link(link: str) -> None:
     msg["Subject"] = "Your Podcast Episode is Ready"
     msg.attach(MIMEText(f"Here is your episode: {link}", "plain"))
 
-    with smtplib.SMTP(os.getenv("SMTP_SERVER"), int(os.getenv("SMTP_PORT", "587"))) as server:
+    # Every other network call in this module (Drive) and its siblings (RSS,
+    # weather, markets) bounds its wait; an unreachable SMTP host without one
+    # blocks the socket forever and wedges the whole publish stage.
+    with smtplib.SMTP(os.getenv("SMTP_SERVER"), int(os.getenv("SMTP_PORT", "587")),
+                      timeout=20) as server:
         server.starttls()
         server.login(sender, os.getenv("PASSWORD"))
         server.sendmail(sender, recipient, msg.as_string())
