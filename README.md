@@ -45,7 +45,7 @@ via `.env`.
 
 - Apple Silicon Mac, Python 3.14 (managed by `uv`)
 - [LM Studio](https://lmstudio.ai) running its local server (port 1234) with a
-  writer model downloaded (`qwen3.5-9b-mlx`), and an API token
+  writer model downloaded (`lms get qwen/qwen3.5-9b --mlx`), and an API token
 - `ffmpeg` (for loudness normalization), optional but recommended
 - `brew install espeak-ng`, Kokoro's text front end (`misaki`) falls back to it
   for words outside its own dictionary
@@ -156,7 +156,7 @@ prints a warning.
 
 | Var | Default | Notes |
 |-----|---------|-------|
-| `WRITER_MODEL` | `qwen3.5-9b-mlx` | any LM Studio model; `qwen3.5-4b-mlx` is lighter |
+| `WRITER_MODEL` | `qwen/qwen3.5-9b` | any LM Studio model id (`lms ls`); `qwen/qwen3.5-4b` is lighter |
 | `TTS_MODEL` | `mlx-community/Kokoro-82M-bf16` | |
 | `ANCHOR_VOICE` / `WEATHER_VOICE` | `am_michael` / `af_heart` | Kokoro American English voice ids |
 | `LISTEN_BACK` | `1` | ASR-transcribes each turn back and diffs it vs. the sent text; `0` skips it |

@@ -109,12 +109,27 @@ def persist_stories(curation: Curation, articles: list[Article]) -> None:
     PATHS.stories.write_text(json.dumps(stories, indent=2))
 
 
+# Greeting, teaser and at least one story.
+MIN_NEWS_TURNS = 3
+WRITER_ATTEMPTS = 3
+
+
 def generate_news(curation: Curation, articles: list[Article],
                   emit: Emitter = noop) -> tuple[Script, str]:
     print("Writing bulletin...")
     persist_stories(curation, articles)
     brief = build_brief(curation, articles)
-    script = structured(SYSTEM, brief, Script, temperature=0.6)
+    # The writer sometimes answers {"turns": []} within a second, which the
+    # schema allows; about one call in six on qwen3.5-9b. Proceeding with it
+    # let the fact-checker write a bulletin of its own from the sources.
+    for attempt in range(1, WRITER_ATTEMPTS + 1):
+        script = structured(SYSTEM, brief, Script, temperature=0.6)
+        if len(script.turns) >= MIN_NEWS_TURNS:
+            break
+        print(f"  writer returned {len(script.turns)} turns, retrying ({attempt}/{WRITER_ATTEMPTS})")
+    else:
+        raise RuntimeError(f"writer returned fewer than {MIN_NEWS_TURNS} turns "
+                           f"{WRITER_ATTEMPTS} times in a row; not writing an empty bulletin")
     for t in script.turns:
         t.speaker = ANCHOR.name  # anchor-only section
     PATHS.script.write_text(script.model_dump_json(indent=2))

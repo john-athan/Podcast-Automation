@@ -38,6 +38,9 @@ uv run python tests/test_synth_loudnorm.py || fail=1
 step "Listen-back: normaliser, WER, alignment, flagging threshold"
 uv run python tests/test_listen_back.py || fail=1
 
+step "Writer retries an empty draft; fact-check stays on the anchor"
+uv run python tests/test_writer_guard.py || fail=1
+
 step "TTS text cleanup: symbols, quotes, apostrophes"
 uv run python tests/test_sanitize.py || fail=1
 

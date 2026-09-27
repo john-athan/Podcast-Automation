@@ -18,7 +18,7 @@ LMSTUDIO_BASE_URL = os.getenv("LMSTUDIO_BASE_URL", "http://localhost:1234/v1")
 LMSTUDIO_API_TOKEN = os.getenv("LMSTUDIO_API_TOKEN", "lm-studio")
 # qwen3.5-9b (MLX, reasoning) gives the cleanest structured output + best dialogue
 # on 24GB. gpt-oss-20b degenerates under strict JSON; qwen3.5-4b is the light fallback.
-WRITER_MODEL = os.getenv("WRITER_MODEL", "qwen3.5-9b-mlx")
+WRITER_MODEL = os.getenv("WRITER_MODEL", "qwen/qwen3.5-9b")
 
 # --- Kokoro (local MLX TTS) -------------------------------------------------
 TTS_MODEL = os.getenv("TTS_MODEL", "mlx-community/Kokoro-82M-bf16")
