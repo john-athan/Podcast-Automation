@@ -53,6 +53,34 @@ check("the alignment reports the differing word, not just the count",
 check("case and punctuation are ignored",
       wer("The DAX rose, sharply!", "the dax rose sharply") == 0.0)
 
+from podcast.listen_back import join_split_compounds, missed_names
+
+check("a currency symbol reads back as the spoken word",
+      wer("sales rose to 1.2 billion dollars", "sales rose to $1.2 billion") == 0.0)
+check("euros and pounds read back the same way",
+      wer("a fine of 40 million euros", "a fine of \u20ac40 million") == 0.0)
+
+
+def wer_joined(sent: str, transcript: str) -> float:
+    ref, hyp = normalize_for_wer(sent), normalize_for_wer(transcript)
+    ref, hyp = join_split_compounds(ref, hyp), join_split_compounds(hyp, ref)
+    return word_error_rate(ref, hyp)[0]
+
+
+check("a compound the transcriber splits is not two errors",
+      wer_joined("winds out of the northwest today", "winds out of the north west to day") == 0.0)
+check("a real substitution still counts after compound joining",
+      wer_joined("winds out of the northwest", "winds out of the southwest") == 1 / 5)
+
+sent = "Adidas chief executive Bjorn Gulden said the German maker grew."
+ops = word_error_rate(normalize_for_wer(sent),
+                      normalize_for_wer("And did chief executive Bjorn Golden said the German maker grew."))[1]
+check("a misheard name is reported, even at the start of a sentence",
+      missed_names(sent, ops) == ["adidas", "gulden"])
+check("sentence openers are not names",
+      missed_names("The market fell. In Munich it rained.",
+                   word_error_rate(["the", "market"], ["a", "market"])[1]) == [])
+
 # Flagging threshold: LISTEN_BACK_WER_MAX gates which turns get flagged, not
 # whether they get resynthesized (that stays a human decision).
 from podcast.config import LISTEN_BACK_WER_MAX

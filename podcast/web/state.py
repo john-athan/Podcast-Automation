@@ -208,11 +208,12 @@ def build_state() -> dict:
             "index": i, "kind": kind, "speaker": t.speaker,
             "text": t.text, "diff": None, "cut_count": 0, "notes": [],
             "source": None, "markets": None, "weather": None, "data": False,
-            "wer_flag": None,
+            "wer_flag": None, "names_missed": [],
         }
         lb = listen_back.get(i)
         if lb and lb.get("flagged"):
             seg["wer_flag"] = lb["wer"]
+            seg["names_missed"] = lb.get("names_missed", [])
         d = diffs.get(i)
         if d:
             seg["diff"] = d["diff"]

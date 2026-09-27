@@ -170,7 +170,9 @@ function renderSegments() {
     if (seg.cut_count > 0) chips.push(`<span class="chip cut">${seg.cut_count} cut</span>`);
     else if (seg.kind === "story" && seg.source) chips.push('<span class="chip ok">source ✓</span>');
     if (seg.wer_flag != null) {
-      chips.push(`<span class="chip wer" title="listen-back transcript diverged from the sent text">WER ${Math.round(seg.wer_flag * 100)}%</span>`);
+      const names = (seg.names_missed || []).join(", ");
+      const label = names ? `misheard: ${esc(names)}` : `WER ${Math.round(seg.wer_flag * 100)}%`;
+      chips.push(`<span class="chip wer" title="listen-back transcript diverged from the sent text">${label}</span>`);
     }
     const idx = pad2(seg.index + 1);
     el.innerHTML =

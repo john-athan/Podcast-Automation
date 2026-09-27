@@ -72,6 +72,20 @@ def _num_to_words(token: str) -> str:
 
 
 _NUMBER_RE = re.compile(r"\d[\d,]*(?:\.\d+)?")
+# Parakeet's text normalisation writes "1.2 billion dollars" as "$1.2 billion",
+# dropping the spoken currency word, so the symbol is read back out as a word.
+_CURRENCY_RE = re.compile(
+    r"([$\u20ac\u00a3])\s?(\d[\d,]*(?:\.\d+)?)(\s+(?:thousand|million|billion|trillion))?",
+    re.IGNORECASE)
+_CURRENCY_WORD = {"$": "dollars", "\u20ac": "euros", "\u00a3": "pounds"}
+# Sentence openers that are capitalised by grammar, not because they name
+# anything. Everything else capitalised in the sent text counts as a name.
+_NOT_NAMES = {
+    "a", "an", "and", "as", "at", "but", "by", "for", "from", "good", "here",
+    "in", "it", "its", "meanwhile", "now", "on", "that", "the", "there", "this",
+    "those", "these", "to", "today", "tonight", "we", "with", "i", "expect",
+    "finally", "also", "after", "before", "over", "under", "while",
+}
 
 
 def normalize_for_wer(text: str) -> list[str]:
@@ -79,9 +93,44 @@ def normalize_for_wer(text: str) -> list[str]:
     the sent text and the transcript so '5.28' vs 'five point two eight'
     doesn't register as a wrong turn.
     """
-    t = _NUMBER_RE.sub(lambda m: _num_to_words(m.group(0)), text.lower())
+    t = _CURRENCY_RE.sub(
+        lambda m: f"{m.group(2)}{m.group(3) or ''} {_CURRENCY_WORD[m.group(1)]}", text)
+    t = _NUMBER_RE.sub(lambda m: _num_to_words(m.group(0)), t.lower())
     t = re.sub(r"[^a-z0-9 ]", " ", t)
     return t.split()
+
+
+def join_split_compounds(tokens: list[str], other: list[str]) -> list[str]:
+    """Merge two adjacent tokens when together they form a word the other side
+    has, so the transcriber's "north west" or "to day" against a sent
+    "northwest" or "today" is not counted as two errors.
+    """
+    vocab = set(other)
+    out: list[str] = []
+    i = 0
+    while i < len(tokens):
+        if i + 1 < len(tokens) and tokens[i] + tokens[i + 1] in vocab and tokens[i] not in vocab:
+            out.append(tokens[i] + tokens[i + 1])
+            i += 2
+        else:
+            out.append(tokens[i])
+            i += 1
+    return out
+
+
+def names_in(text: str) -> set[str]:
+    """Lowercased capitalised words of the sent text that are not just
+    sentence openers: the brands, people and places a listener notices first
+    when they come out wrong.
+    """
+    return {w.lower() for w in re.findall(r"\b[A-Z][a-zA-Z]+\b", text)} - _NOT_NAMES
+
+
+def missed_names(sent: str, ops: list[dict]) -> list[str]:
+    """Names the transcript did not reproduce. One mangled name in a long
+    turn barely moves the WER, and it is the error that matters most."""
+    names = names_in(sent)
+    return sorted({op["ref"] for op in ops if op["ref"] in names})
 
 
 def _align(ref: list[str], hyp: list[str]) -> list[dict]:
@@ -158,18 +207,21 @@ def run(segments: list[np.ndarray], turns: list[Turn], sent_texts: list[str],
         audio = resample_audio(np.asarray(seg, dtype=np.float32), SAMPLE_RATE, target_sr)
         transcript = model.generate(mx.array(audio, dtype=mx.float32)).text
         ref, hyp = normalize_for_wer(sent), normalize_for_wer(transcript)
+        ref, hyp = join_split_compounds(ref, hyp), join_split_compounds(hyp, ref)
         wer, ops = word_error_rate(ref, hyp)
+        names = missed_names(sent, ops)
         results.append({
             "index": i, "speaker": turn.speaker, "wer": round(wer, 4),
-            "flagged": wer > LISTEN_BACK_WER_MAX,
+            "flagged": wer > LISTEN_BACK_WER_MAX or bool(names),
+            "names_missed": names,
             "sent_text": sent, "transcript": transcript,
             "differences": ops,
         })
     el = time.perf_counter() - t0
 
     flagged = sum(1 for r in results if r["flagged"])
-    print(f"listen-back: {flagged} of {n} turns above {LISTEN_BACK_WER_MAX:.0%} WER "
-          f"({el:.1f}s ASR)")
+    print(f"listen-back: {flagged} of {n} turns flagged (above {LISTEN_BACK_WER_MAX:.0%} WER "
+          f"or a name misheard; {el:.1f}s ASR)")
 
     PATHS.ensure()
     PATHS.listen_back.write_text(json.dumps(results, indent=2))
