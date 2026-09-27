@@ -29,6 +29,10 @@ dependencies = [
     # declare it in any of its own extras, so it's listed here directly. The
     # "en" extra is what pulls in espeakng-loader.
     "misaki[en]>=0.9.4",
+    # misaki needs this spaCy model and installs it at runtime when missing,
+    # outside the lockfile: the next `uv sync` removed it and the next run
+    # downloaded it again. Pinned here so it is locked like everything else.
+    "en-core-web-sm",
 ]
 
 [project.optional-dependencies]
@@ -74,3 +78,6 @@ target-version = "py314"
 # them to specific types would turn a pipeline built to survive partial failure
 # into one that dies on an unanticipated errno.
 ignore = ["BLE001"]
+
+[tool.uv.sources]
+en-core-web-sm = { url = "https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl" }

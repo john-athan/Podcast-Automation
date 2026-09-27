@@ -19,6 +19,7 @@ the pipeline pulls in is worth more than the obligation would be.
 | python-dotenv | BSD-3-Clause |
 | mlx-audio | MIT |
 | misaki (extra: `en`) | Apache-2.0 |
+| en-core-web-sm (spaCy English model, required by misaki) | MIT |
 | soundfile | BSD-3-Clause |
 | numpy | BSD-3-Clause |
 | torch | BSD-3-Clause |
