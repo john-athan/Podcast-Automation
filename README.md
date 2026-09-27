@@ -37,7 +37,7 @@ so everything fits in 24 GB.
 | Data   | Open-Meteo (Munich weather), Yahoo Finance (DAX / S&P / EUR-USD), keyless |
 | Glue   | async httpx, feedparser, pydantic, ffmpeg |
 
-Anchor + weather map to Kokoro voice ids (`am_michael` / `af_heart`, picked in a
+Anchor + weather map to Kokoro voice ids (`af_heart` / `am_michael`, picked in a
 blind A/B listening trial); swap voices/models/city in `podcast/config.py` or
 via `.env`.
 
@@ -158,12 +158,12 @@ prints a warning.
 |-----|---------|-------|
 | `WRITER_MODEL` | `qwen/qwen3.5-9b` | any LM Studio model id (`lms ls`); `qwen/qwen3.5-4b` is lighter |
 | `TTS_MODEL` | `mlx-community/Kokoro-82M-bf16` | |
-| `ANCHOR_VOICE` / `WEATHER_VOICE` | `am_michael` / `af_heart` | Kokoro American English voice ids |
+| `ANCHOR_VOICE` / `WEATHER_VOICE` | `af_heart` / `am_michael` | Kokoro American English voice ids |
 | `LISTEN_BACK` | `1` | ASR-transcribes each turn back and diffs it vs. the sent text; `0` skips it |
 | `ASR_MODEL` | `mlx-community/parakeet-tdt-0.6b-v2` | listen-back's speech-to-text model |
 | `LISTEN_BACK_WER_MAX` | `0.15` | word error rate above which a turn is flagged |
-| `SPEED_ANCHOR` / `SPEED_WEATHER` | `1.10` / `1.0` | Kokoro's own generation speed; >1 = faster |
-| `TEMPO_ANCHOR` / `TEMPO_WEATHER` | `1.0` / `1.10` | post-synthesis tempo, pitch-preserving; applied only if != 1.0 |
+| `SPEED_ANCHOR` / `SPEED_WEATHER` | `1.0` / `1.10` | Kokoro's own generation speed; >1 = faster |
+| `TEMPO_ANCHOR` / `TEMPO_WEATHER` | `1.10` / `1.0` | post-synthesis tempo, pitch-preserving; applied only if != 1.0 |
 | `ESPEAK_LIBRARY` / `ESPEAK_DATA` | `/opt/homebrew/lib/libespeak-ng.dylib` / `/opt/homebrew/share/espeak-ng-data` | override if espeak-ng lives elsewhere |
 | `WEATHER_CITY` / `WEATHER_LAT` / `WEATHER_LON` | `Munich` / `48.137` / `11.575` | weather segment |
 

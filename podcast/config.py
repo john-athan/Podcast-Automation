@@ -53,12 +53,14 @@ class Host:
 # incumbent. The anchor's pace comes entirely from Kokoro's own generation
 # speed (no post-synthesis stretch); the weather voice keeps the tempo bump
 # that VibeVoice also used.
-ANCHOR = Host(name="Anchor", voice=os.getenv("ANCHOR_VOICE", "am_michael"),
-              speed=float(os.getenv("SPEED_ANCHOR", "1.10")),
-              tempo=float(os.getenv("TEMPO_ANCHOR", "1.0")))
-WEATHER = Host(name="Weather", voice=os.getenv("WEATHER_VOICE", "af_heart"),
-               speed=float(os.getenv("SPEED_WEATHER", "1.0")),
-               tempo=float(os.getenv("TEMPO_WEATHER", "1.10")))
+# Each voice keeps the pacing it was approved at in the listening trial:
+# Heart at native speed plus a tempo bump, Michael at a faster native speed.
+ANCHOR = Host(name="Anchor", voice=os.getenv("ANCHOR_VOICE", "af_heart"),
+              speed=float(os.getenv("SPEED_ANCHOR", "1.0")),
+              tempo=float(os.getenv("TEMPO_ANCHOR", "1.10")))
+WEATHER = Host(name="Weather", voice=os.getenv("WEATHER_VOICE", "am_michael"),
+               speed=float(os.getenv("SPEED_WEATHER", "1.10")),
+               tempo=float(os.getenv("TEMPO_WEATHER", "1.0")))
 HOSTS: dict[str, Host] = {ANCHOR.name: ANCHOR, WEATHER.name: WEATHER}
 
 # --- Local extras -----------------------------------------------------------
