@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import io
+import json
 import re
 import shutil
 import subprocess
@@ -135,14 +136,51 @@ def join_turns(segments: list[np.ndarray], turns: list[Turn]) -> np.ndarray:
     return np.concatenate(pieces)
 
 
+def _measure_loudness(path) -> dict[str, str]:
+    """Pass 1: measure real input loudness so pass 2 can normalize with linear=true.
+
+    Without measured_* values loudnorm falls back to a dynamic, per-frame
+    estimate that can land a full LU or more off target; feeding its own
+    measurement back in gets pass 2 within a fraction of a LU.
+    """
+    proc = subprocess.run(
+        ["ffmpeg", "-hide_banner", "-nostats", "-i", str(path),
+         "-af", f"loudnorm=I={LUFS_TARGET}:TP=-1.5:LRA=11:print_format=json",
+         "-f", "null", "-"],
+        capture_output=True, check=False, text=True,
+    )
+    return parse_loudnorm_json(proc.stderr)
+
+
+def parse_loudnorm_json(stderr: str) -> dict[str, str]:
+    """Pull loudnorm's JSON block out of ffmpeg's stderr.
+
+    Split out from _measure_loudness so the parser is testable against a
+    captured stderr fixture without running ffmpeg.
+    """
+    match = re.search(r"\{[^{}]*\}", stderr, re.DOTALL)
+    if not match:
+        tail = "\n".join(stderr.splitlines()[-20:])
+        raise ValueError(f"loudnorm pass 1: no JSON block in ffmpeg output\n{tail}")
+    try:
+        return json.loads(match.group(0))
+    except json.JSONDecodeError as exc:
+        tail = "\n".join(stderr.splitlines()[-20:])
+        raise ValueError(f"loudnorm pass 1: unparseable JSON ({exc})\n{tail}") from exc
+
+
 def _loudnorm(path) -> None:
-    """Normalize to broadcast loudness if ffmpeg is available."""
+    """Two-pass loudnorm to broadcast target, if ffmpeg is available."""
     if not shutil.which("ffmpeg"):
         return
+    measured = _measure_loudness(path)
     tmp = path.with_suffix(".norm.wav")
     subprocess.run(
         ["ffmpeg", "-y", "-i", str(path),
-         "-af", f"loudnorm=I={LUFS_TARGET}:TP=-1.5:LRA=11",
+         "-af", (f"loudnorm=I={LUFS_TARGET}:TP=-1.5:LRA=11:"
+                 f"measured_I={measured['input_i']}:measured_TP={measured['input_tp']}:"
+                 f"measured_LRA={measured['input_lra']}:measured_thresh={measured['input_thresh']}:"
+                 f"offset={measured['target_offset']}:linear=true:print_format=summary"),
          "-ar", str(SAMPLE_RATE), str(tmp)],
         check=False, capture_output=True,
     )
