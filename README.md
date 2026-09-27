@@ -14,7 +14,8 @@ hydrate  -> full article text fetched + extracted (trafilatura) for the picks
 write    -> local LLM writes greeting + headline teasers + one turn per story
 verify   -> local LLM fact-checks every claim against sources, cuts unsupported
 assemble -> markets brief + Munich weather built deterministically from real data
-synth    -> VibeVoice (MLX): anchor voice + weather voice; ffmpeg loudnorm -16 LUFS
+synth    -> VibeVoice (MLX): anchor voice + weather voice, real pauses between
+            turns; ffmpeg loudnorm -16 LUFS
 publish  -> (optional) Google Drive upload + email link
 ```
 

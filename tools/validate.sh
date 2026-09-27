@@ -29,6 +29,9 @@ python3 -c "import podcast; print('podcast', podcast.__version__)" || fail=1
 step "Source pages stay on the data side of the prompt"
 uv run python tests/test_fence.py || fail=1
 
+step "Pauses between turns: gap length, join length, fade-only-when-needed"
+uv run python tests/test_synth_pauses.py || fail=1
+
 if [ "$(uname -sm)" = "Darwin arm64" ]; then
   step "Apple Silicon: resolve the real dependency tree"
   uv sync --frozen --quiet && echo "ok, environment resolves" || fail=1

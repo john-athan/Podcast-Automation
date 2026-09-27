@@ -28,6 +28,11 @@ TTS_DDPM_STEPS = int(os.getenv("TTS_DDPM_STEPS", "20"))
 TTS_CFG_SCALE = float(os.getenv("TTS_CFG_SCALE", "1.5"))
 LUFS_TARGET = -16.0  # podcast loudness standard
 
+# The exact lead sentence write.py gives the markets turn. Shared with synth.py,
+# which has no stored segment type and tells the markets turn apart from a
+# story turn by matching this prefix.
+MARKETS_LEAD = "Now to the markets."
+
 
 @dataclass(frozen=True)
 class Host:

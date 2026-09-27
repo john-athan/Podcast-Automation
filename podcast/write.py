@@ -10,7 +10,7 @@ import json
 from datetime import UTC, datetime
 from urllib.parse import urlparse
 
-from .config import ANCHOR, PATHS, WEATHER
+from .config import ANCHOR, MARKETS_LEAD, PATHS, WEATHER
 from .events import Emitter, noop, substage
 from .llm import structured
 from .models import Article, Curation, MarketQuote, Script, Turn, Weather
@@ -136,7 +136,7 @@ def _markets_turn(quotes: list[MarketQuote]) -> Turn | None:
         else:
             dir_ = "up" if q.change_pct > 0 else "down"
             bits.append(f"{q.label} closed {dir_} {abs(q.change_pct):.1f} percent at {price}")
-    return Turn(speaker=ANCHOR.name, text="Now to the markets. " + ". ".join(
+    return Turn(speaker=ANCHOR.name, text=f"{MARKETS_LEAD} " + ". ".join(
         b[0].upper() + b[1:] for b in bits) + ".")
 
 

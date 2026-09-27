@@ -10,9 +10,34 @@ import time
 import numpy as np
 import soundfile as sf
 
-from .config import HOSTS, LUFS_TARGET, PATHS, SAMPLE_RATE, TTS_CFG_SCALE, TTS_DDPM_STEPS, TTS_MODEL
+from .config import (
+    HOSTS,
+    LUFS_TARGET,
+    MARKETS_LEAD,
+    PATHS,
+    SAMPLE_RATE,
+    TTS_CFG_SCALE,
+    TTS_DDPM_STEPS,
+    TTS_MODEL,
+    WEATHER,
+)
 from .events import Emitter, noop, substage
-from .models import Script
+from .models import Script, Turn
+
+# Pause between turns, tuned by ear. Turn.speaker/text carry no segment type
+# (see models.Turn), so _turn_kind below infers one from position and content,
+# the same signals write.py's assemble() used to build the script in the first
+# place: greeting and teaser are always first, sign-off is always last, weather
+# is the only Weather-voiced turn, and markets is the only turn built with
+# MARKETS_LEAD. Everything else between the teaser and the closing segments is
+# a story.
+GAP_SAME_KIND_MS = 350     # story to story
+GAP_SECTION_CHANGE_MS = 600  # greeting/teaser to first story, story to markets, markets to weather
+GAP_BEFORE_SIGNOFF_MS = 800
+FADE_MS = 10
+# A turn already near zero at the boundary doesn't need a fade; forcing one
+# in would just spend 10ms ramping silence into more silence.
+FADE_SILENCE_THRESHOLD = 1e-3
 
 
 def sanitize_for_tts(text: str) -> str:
@@ -49,6 +74,65 @@ def _atempo(audio: np.ndarray, factor: float) -> np.ndarray:
         return audio
     out, _ = sf.read(io.BytesIO(proc.stdout))
     return out.astype(np.float32)
+
+
+def _turn_kind(turns: list[Turn], i: int) -> str:
+    """Which segment turn i belongs to (see the module docstring above)."""
+    if i == len(turns) - 1:
+        return "sign_off"
+    if i == 0:
+        return "greeting"
+    if i == 1:
+        return "teaser"
+    if turns[i].speaker == WEATHER.name:
+        return "weather"
+    if turns[i].text.startswith(MARKETS_LEAD):
+        return "markets"
+    return "story"
+
+
+def _gap_ms(prev_kind: str, kind: str) -> int:
+    """Pause length for the boundary into `kind`, coming from `prev_kind`."""
+    if kind == "sign_off":
+        return GAP_BEFORE_SIGNOFF_MS
+    if kind == prev_kind:
+        return GAP_SAME_KIND_MS
+    return GAP_SECTION_CHANGE_MS
+
+
+def _fade_edges(seg: np.ndarray, fade_in: bool, fade_out: bool) -> np.ndarray:
+    """Ramp a turn's edges so the silence spliced in next to it doesn't click."""
+    n = min(int(SAMPLE_RATE * FADE_MS / 1000), len(seg))
+    if n <= 0:
+        return seg
+    out = seg.copy()
+    if fade_in and abs(out[0]) > FADE_SILENCE_THRESHOLD:
+        out[:n] *= np.linspace(0.0, 1.0, n, dtype=out.dtype)
+    if fade_out and abs(out[-1]) > FADE_SILENCE_THRESHOLD:
+        out[-n:] *= np.linspace(1.0, 0.0, n, dtype=out.dtype)
+    return out
+
+
+def join_turns(segments: list[np.ndarray], turns: list[Turn]) -> np.ndarray:
+    """Concatenate turns with real silence between them, sized by section change.
+
+    No pause before the first turn or after the last, so the only silence
+    added beyond what synthesis produced is the inserted gaps.
+    """
+    if not segments:
+        return np.zeros(1, dtype=np.float32)
+    if len(segments) == 1:
+        return segments[0]
+
+    kinds = [_turn_kind(turns, i) for i in range(len(turns))]
+    last = len(segments) - 1
+    pieces: list[np.ndarray] = []
+    for i, seg in enumerate(segments):
+        pieces.append(_fade_edges(seg, fade_in=i > 0, fade_out=i < last))
+        if i < last:
+            gap_ms = _gap_ms(kinds[i], kinds[i + 1])
+            pieces.append(np.zeros(int(SAMPLE_RATE * gap_ms / 1000), dtype=seg.dtype))
+    return np.concatenate(pieces)
 
 
 def _loudnorm(path) -> None:
@@ -97,7 +181,7 @@ def generate_audio(script: Script | None = None, emit: Emitter = noop):
         ]
         segments.append(_atempo(np.concatenate(parts), host.speed))
 
-    audio = np.concatenate(segments) if segments else np.zeros(1, dtype=np.float32)
+    audio = join_turns(segments, script.turns)
     PATHS.ensure()
     sf.write(str(PATHS.audio), audio, SAMPLE_RATE)
     _loudnorm(PATHS.audio)
