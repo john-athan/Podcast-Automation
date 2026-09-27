@@ -1,6 +1,7 @@
 """VibeVoice (MLX) turn-by-turn synthesis -> single loudness-normalized WAV."""
 from __future__ import annotations
 
+import gc
 import io
 import json
 import re
@@ -11,8 +12,10 @@ import time
 import numpy as np
 import soundfile as sf
 
+from . import listen_back
 from .config import (
     HOSTS,
+    LISTEN_BACK,
     LUFS_TARGET,
     MARKETS_LEAD,
     PATHS,
@@ -204,20 +207,36 @@ def generate_audio(script: Script | None = None, emit: Emitter = noop):
     emit(substage("synth", f"voicing {n} turns", i=0, n=n))
     t0 = time.perf_counter()
     segments: list[np.ndarray] = []
+    sent_texts: list[str] = []
     for i, turn in enumerate(script.turns):
         host = HOSTS[turn.speaker]
         print(f"  {i + 1}/{len(script.turns)} {host.name}")
         emit(substage("synth", f"turn {i + 1}/{n} · {host.name}", i=i + 1, n=n))
         # One turn at a time so each host's tempo can be applied to its own audio.
+        sent = sanitize_for_tts(turn.text)
+        sent_texts.append(sent)
         parts = [
             np.asarray(r.audio)
             for r in model.generate(
-                text=[sanitize_for_tts(turn.text)], voice=[host.voice],
+                text=[sent], voice=[host.voice],
                 cfg_scale=TTS_CFG_SCALE, ddpm_steps=TTS_DDPM_STEPS,
                 max_tokens=1200, verbose=False,
             )
         ]
         segments.append(_atempo(np.concatenate(parts), host.speed))
+    synth_elapsed = time.perf_counter() - t0
+
+    if LISTEN_BACK:
+        # Free the TTS model's weights before the ASR model loads; 24GB is
+        # shared with everything else on this Mac (see listen_back module doc).
+        del model
+        gc.collect()
+        try:
+            import mlx.core as mx
+            mx.clear_cache()
+        except ImportError:
+            pass
+        listen_back.run(segments, script.turns, sent_texts, emit)
 
     audio = join_turns(segments, script.turns)
     PATHS.ensure()
@@ -225,8 +244,8 @@ def generate_audio(script: Script | None = None, emit: Emitter = noop):
     _loudnorm(PATHS.audio)
 
     dur = len(audio) / SAMPLE_RATE
-    el = time.perf_counter() - t0
-    print(f"  {dur:.1f}s audio in {el:.1f}s ({el/dur:.2f}x RT) -> {PATHS.audio}")
+    print(f"  {dur:.1f}s audio in {synth_elapsed:.1f}s "
+          f"({synth_elapsed/dur:.2f}x RT) -> {PATHS.audio}")
     return PATHS.audio
 
 

@@ -35,6 +35,9 @@ uv run python tests/test_synth_pauses.py || fail=1
 step "Two-pass loudnorm: pass-1 JSON parsing, error path, measured loudness"
 uv run python tests/test_synth_loudnorm.py || fail=1
 
+step "Listen-back: normaliser, WER, alignment, flagging threshold"
+uv run python tests/test_listen_back.py || fail=1
+
 if [ "$(uname -sm)" = "Darwin arm64" ]; then
   step "Apple Silicon: resolve the real dependency tree"
   uv sync --frozen --quiet && echo "ok, environment resolves" || fail=1

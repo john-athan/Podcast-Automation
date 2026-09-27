@@ -16,6 +16,8 @@ verify   -> local LLM fact-checks every claim against sources, cuts unsupported
 assemble -> markets brief + Munich weather built deterministically from real data
 synth    -> VibeVoice (MLX): anchor voice + weather voice, real pauses between
             turns, ffmpeg two-pass loudnorm to -16 LUFS
+listen   -> ASR transcribes each turn back and diffs it against the sent text,
+            flags any turn over LISTEN_BACK_WER_MAX (listen_back.json)
 publish  -> (optional) Google Drive upload + email link
 ```
 
@@ -126,6 +128,7 @@ uv run python scripts/test_web_live.py           # endpoints + WebSocket + run l
 - `output/extras.json`, exact market quotes + weather figures
 - `output/script.json`, the bulletin script (anchor + weather turns)
 - `output/episode.wav`, the finished episode
+- `output/listen_back.json`, per-turn WER vs. the text sent to the TTS
 
 ## Publishing (optional)
 
@@ -153,6 +156,9 @@ prints a warning.
 | `TTS_DDPM_STEPS` | `20` | higher = better quality, slower |
 | `TTS_CFG_SCALE` | `1.5` | classifier-free guidance strength for VibeVoice |
 | `ANCHOR_VOICE` / `WEATHER_VOICE` | `en-Frank_man` / `en-Emma_woman` | bundled VibeVoice caches |
+| `LISTEN_BACK` | `1` | ASR-transcribes each turn back and diffs it vs. the sent text; `0` skips it |
+| `ASR_MODEL` | `mlx-community/parakeet-tdt-0.6b-v2` | listen-back's speech-to-text model |
+| `LISTEN_BACK_WER_MAX` | `0.15` | word error rate above which a turn is flagged |
 | `SPEED_ANCHOR` / `SPEED_WEATHER` | `0.92` / `1.10` | tempo, pitch-preserving; >1 = faster |
 | `WEATHER_CITY` / `WEATHER_LAT` / `WEATHER_LON` | `Munich` / `48.137` / `11.575` | weather segment |
 

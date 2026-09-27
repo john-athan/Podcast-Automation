@@ -144,6 +144,7 @@ header {
 .chip.ok { background: var(--ok-bg); color: var(--ok); }
 .chip.cut { background: var(--cut-bg); color: var(--cut); }
 .chip.data { background: var(--warn-bg); color: var(--warn); }
+.chip.wer { background: var(--warn-bg); color: var(--warn); }
 .seg .sbd { padding: 4px 14px 14px; }
 .script { font-size: 15px; line-height: 1.6; color: var(--ink); padding: 10px 12px; border: 1px dashed var(--line-strong); border-radius: 6px; background: var(--ground); }
 .script[contenteditable="true"] { border-style: solid; background: var(--panel); }

@@ -28,6 +28,14 @@ TTS_DDPM_STEPS = int(os.getenv("TTS_DDPM_STEPS", "20"))
 TTS_CFG_SCALE = float(os.getenv("TTS_CFG_SCALE", "1.5"))
 LUFS_TARGET = -16.0  # podcast loudness standard
 
+# --- Listen-back (post-synthesis ASR check) ---------------------------------
+# mlx_audio.stt bundled models: parakeet-tdt-0.6b-v2 is the English-only TDT
+# checkpoint (v3 trades English accuracy for 25-language coverage we don't
+# need); it decodes far faster than whisper-large-v3-turbo on this Mac.
+ASR_MODEL = os.getenv("ASR_MODEL", "mlx-community/parakeet-tdt-0.6b-v2")
+LISTEN_BACK = os.getenv("LISTEN_BACK", "1") not in ("0", "false", "False")
+LISTEN_BACK_WER_MAX = float(os.getenv("LISTEN_BACK_WER_MAX", "0.15"))
+
 # The exact lead sentence write.py gives the markets turn. Shared with synth.py,
 # which has no stored segment type and tells the markets turn apart from a
 # story turn by matching this prefix.
@@ -105,6 +113,8 @@ class Paths:
     def extras(self) -> Path: return self.out / "extras.json"
     @property
     def audio(self) -> Path: return self.out / "episode.wav"
+    @property
+    def listen_back(self) -> Path: return self.out / "listen_back.json"
 
     def ensure(self) -> Paths:
         self.out.mkdir(parents=True, exist_ok=True)

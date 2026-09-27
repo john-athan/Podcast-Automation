@@ -190,6 +190,7 @@ def build_state() -> dict:
     stories = _load(PATHS.stories) or []
     extras = _load(PATHS.extras) or {}
     diffs = _build_diffs(script)
+    listen_back = {r["index"]: r for r in (_load(PATHS.listen_back) or [])}
 
     kinds = [_classify(i, t, n) for i, t in enumerate(turns)]
     story_idx = [i for i, k in enumerate(kinds) if k == "story"]
@@ -207,7 +208,11 @@ def build_state() -> dict:
             "index": i, "kind": kind, "speaker": t.speaker,
             "text": t.text, "diff": None, "cut_count": 0, "notes": [],
             "source": None, "markets": None, "weather": None, "data": False,
+            "wer_flag": None,
         }
+        lb = listen_back.get(i)
+        if lb and lb.get("flagged"):
+            seg["wer_flag"] = lb["wer"]
         d = diffs.get(i)
         if d:
             seg["diff"] = d["diff"]
