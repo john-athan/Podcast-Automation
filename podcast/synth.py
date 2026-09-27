@@ -57,7 +57,11 @@ def sanitize_for_tts(text: str) -> str:
     t = t.replace("%", " percent")
     t = t.replace("&", " and ")
     t = t.replace("ppm", "parts per million")
-    t = re.sub(r"[\"“”„'‘’()\[\]*_#]", " ", t)      # stray quotes/brackets/markdown
+    # An apostrophe inside a word is speech ("tonight's", "don't"); stripping it
+    # made the voice say "tonight s" with a separate S. Only quote marks go.
+    t = re.sub(r"[‘’]", "'", t)
+    t = re.sub(r"(?<![A-Za-z])'|'(?![A-Za-z])", " ", t)
+    t = re.sub(r"[\"“”„()\[\]*_#]", " ", t)      # stray quotes/brackets/markdown
     t = re.sub(r"\s+([.,!?;:])", r"\1", t)           # tidy spacing before punctuation
     t = re.sub(r"\s{2,}", " ", t).strip()
     return t
