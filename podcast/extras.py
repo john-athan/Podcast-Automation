@@ -10,8 +10,9 @@ from .models import MarketQuote, Weather
 _UA = {"User-Agent": "Mozilla/5.0 (podcast-automation)"}
 
 # WMO weather codes -> plain English
+# Noun phrases throughout: the weather turn reads them as "with <phrase>".
 _WMO = {
-    0: "clear skies", 1: "mostly clear", 2: "partly cloudy", 3: "overcast",
+    0: "clear skies", 1: "mostly clear skies", 2: "partly cloudy skies", 3: "overcast skies",
     45: "fog", 48: "freezing fog", 51: "light drizzle", 53: "drizzle",
     55: "heavy drizzle", 61: "light rain", 63: "rain", 65: "heavy rain",
     71: "light snow", 73: "snow", 75: "heavy snow", 80: "rain showers",
