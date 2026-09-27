@@ -174,6 +174,15 @@ prints a warning.
 - `qwen3.5-9b` is a reasoning model, it emits structured output in the
   reasoning channel, which `podcast/llm.py` reads transparently.
 
+## Pronunciation overrides
+
+`podcast/pronunciations.json` maps a word to its IPA spelling for names Kokoro
+gets wrong (`misaki`, its text front end, accepts inline `[word](/ipa/)`
+markup, and this file is how synth.py supplies it). When listen-back flags a
+misheard name and the audio really is a mispronunciation rather than an ASR
+quirk, add the word here; the IPA symbols are misaki's own, the same set
+espeak-ng and most G2P tools use.
+
 ## License
 
 MIT, see [LICENSE](LICENSE). Note the local models carry their own licenses

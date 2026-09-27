@@ -29,6 +29,8 @@ from .config import (
 from .events import Emitter, noop, substage
 from .models import Script, Turn
 
+PRONUNCIATIONS_PATH = Path(__file__).resolve().parent / "pronunciations.json"
+
 # Pause between turns, tuned by ear. Turn.speaker/text carry no segment type
 # (see models.Turn), so _turn_kind below infers one from position and content,
 # the same signals write.py's assemble() used to build the script in the first
@@ -66,6 +68,26 @@ def sanitize_for_tts(text: str) -> str:
     t = re.sub(r"\s+([.,!?;:])", r"\1", t)           # tidy spacing before punctuation
     t = re.sub(r"\s{2,}", " ", t).strip()
     return t
+
+
+def load_pronunciations() -> dict[str, str]:
+    """Word -> IPA overrides for names Kokoro says wrong (see pronunciations.json)."""
+    if not PRONUNCIATIONS_PATH.exists():
+        return {}
+    return json.loads(PRONUNCIATIONS_PATH.read_text())
+
+
+def apply_pronunciations(text: str, pronunciations: dict[str, str]) -> str:
+    """Wrap listed words in misaki's inline IPA markup, `[word](/ipa/)`.
+
+    A plain `\\bword\\b` match already stops at a trailing possessive: the
+    apostrophe in "Adidas's" is not a word character, so the boundary falls
+    right after "Adidas" and the "'s" is left outside the markup, untouched.
+    Whole-word and case-sensitive, so "Adidasx" or a different case is left as is.
+    """
+    for word, ipa in pronunciations.items():
+        text = re.sub(rf"\b{re.escape(word)}\b", f"[{word}](/{ipa}/)", text)
+    return text
 
 
 def _patch_espeak() -> None:
@@ -226,6 +248,7 @@ def generate_audio(script: Script | None = None, emit: Emitter = noop):
     print(f"Loading {TTS_MODEL} ...")
     emit(substage("synth", f"loading {TTS_MODEL.split('/')[-1]}"))
     model = load_model(TTS_MODEL)
+    pronunciations = load_pronunciations()
 
     n = len(script.turns)
     print(f"Synthesizing {n} turns...")
@@ -239,10 +262,11 @@ def generate_audio(script: Script | None = None, emit: Emitter = noop):
         emit(substage("synth", f"turn {i + 1}/{n} · {host.name}", i=i + 1, n=n))
         # One turn at a time so each host's tempo can be applied to its own audio.
         sent = sanitize_for_tts(turn.text)
-        sent_texts.append(sent)
+        sent_texts.append(sent)  # plain text, no IPA markup, so WER counts real words only
+        spoken = apply_pronunciations(sent, pronunciations)
         parts = []
         result_sr = SAMPLE_RATE
-        for r in model.generate(text=sent, voice=host.voice, speed=host.speed, lang_code=TTS_LANG_CODE):
+        for r in model.generate(text=spoken, voice=host.voice, speed=host.speed, lang_code=TTS_LANG_CODE):
             parts.append(np.asarray(r.audio))
             result_sr = r.sample_rate
         turn_audio = np.concatenate(parts)

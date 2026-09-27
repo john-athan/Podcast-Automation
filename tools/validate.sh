@@ -41,6 +41,9 @@ uv run python tests/test_listen_back.py || fail=1
 step "TTS text cleanup: symbols, quotes, apostrophes"
 uv run python tests/test_sanitize.py || fail=1
 
+step "Pronunciation overrides: whole-word IPA markup, possessives, no-op empty list"
+uv run python tests/test_pronunciations.py || fail=1
+
 step "Host speed/tempo split: Kokoro's own pacing vs. the post-synthesis atempo pass"
 uv run python tests/test_host_speed.py || fail=1
 
