@@ -14,9 +14,12 @@ from .. import config as cfg
 
 _ENV_PATH = Path(cfg.__file__).resolve().parent.parent / ".env"
 
-# Bundled VibeVoice voice caches (from config.py) offered in the voice pickers.
-VOICES = ["en-Frank_man", "en-Davis_man", "en-Carter_man", "en-Mike_man",
-          "en-Grace_woman", "en-Emma_woman"]
+# Kokoro American-English voice packs (lang_code "a", from config.py) offered
+# in the voice pickers.
+VOICES = ["af_heart", "af_alloy", "af_aoede", "af_bella", "af_jessica", "af_kore",
+          "af_nicole", "af_nova", "af_river", "af_sarah", "af_sky",
+          "am_adam", "am_echo", "am_eric", "am_fenrir", "am_liam", "am_michael",
+          "am_onyx", "am_puck", "am_santa"]
 
 # key -> (env var, label, kind, default-from-config)
 FIELDS: dict[str, tuple[str, str, str, object]] = {
@@ -24,12 +27,12 @@ FIELDS: dict[str, tuple[str, str, str, object]] = {
     "weather_lat":   ("WEATHER_LAT",   "Latitude",       "float", cfg.WEATHER_LAT),
     "weather_lon":   ("WEATHER_LON",   "Longitude",      "float", cfg.WEATHER_LON),
     "writer_model":  ("WRITER_MODEL",  "Writer model",   "str",   cfg.WRITER_MODEL),
-    "ddpm_steps":    ("TTS_DDPM_STEPS", "DDPM steps",     "int",   cfg.TTS_DDPM_STEPS),
-    "cfg_scale":     ("TTS_CFG_SCALE", "CFG scale",       "float", cfg.TTS_CFG_SCALE),
     "anchor_voice":  ("ANCHOR_VOICE",  "Anchor voice",   "voice", cfg.ANCHOR.voice),
     "weather_voice": ("WEATHER_VOICE", "Weather voice",  "voice", cfg.WEATHER.voice),
     "speed_anchor":  ("SPEED_ANCHOR",  "Anchor speed",   "float", cfg.ANCHOR.speed),
     "speed_weather": ("SPEED_WEATHER", "Weather speed",  "float", cfg.WEATHER.speed),
+    "tempo_anchor":  ("TEMPO_ANCHOR",  "Anchor tempo",   "float", cfg.ANCHOR.tempo),
+    "tempo_weather": ("TEMPO_WEATHER", "Weather tempo",  "float", cfg.WEATHER.tempo),
     "publish":       ("PUBLISH",       "Publish (Drive + email)", "bool", False),
 }
 

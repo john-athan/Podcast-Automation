@@ -34,12 +34,12 @@ async def main() -> int:
         # --- config PATCH round-trips (restore .env after) ----------------
         env_before = ENV.read_text() if ENV.exists() else None
         cfg = (await c.get("/api/config")).json()
-        ddpm = next(f for f in cfg["fields"] if f["key"] == "ddpm_steps")["value"]
-        new = (await c.patch("/api/config", json={"ddpm_steps": ddpm + 5})).json()
-        got = next(f for f in new["fields"] if f["key"] == "ddpm_steps")["value"]
-        assert got == ddpm + 5, f"config patch failed: {got}"
-        assert f"TTS_DDPM_STEPS={ddpm + 5}" in ENV.read_text()
-        print(f"config PATCH: ddpm {ddpm} -> {got}, persisted to .env  OK")
+        speed = next(f for f in cfg["fields"] if f["key"] == "speed_anchor")["value"]
+        new = (await c.patch("/api/config", json={"speed_anchor": speed + 0.1})).json()
+        got = next(f for f in new["fields"] if f["key"] == "speed_anchor")["value"]
+        assert got == speed + 0.1, f"config patch failed: {got}"
+        assert f"SPEED_ANCHOR={got}" in ENV.read_text()
+        print(f"config PATCH: anchor speed {speed} -> {got}, persisted to .env  OK")
         if env_before is None:
             ENV.unlink()  # we created it
         else:

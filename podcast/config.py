@@ -20,12 +20,10 @@ LMSTUDIO_API_TOKEN = os.getenv("LMSTUDIO_API_TOKEN", "lm-studio")
 # on 24GB. gpt-oss-20b degenerates under strict JSON; qwen3.5-4b is the light fallback.
 WRITER_MODEL = os.getenv("WRITER_MODEL", "qwen3.5-9b-mlx")
 
-# --- VibeVoice (local MLX TTS) ---------------------------------------------
-TTS_MODEL = os.getenv("TTS_MODEL", "mlx-community/VibeVoice-Realtime-0.5B-fp16")
-SAMPLE_RATE = 24_000
-# Higher diffusion steps + cfg = better quality, slower. Quality-first defaults.
-TTS_DDPM_STEPS = int(os.getenv("TTS_DDPM_STEPS", "20"))
-TTS_CFG_SCALE = float(os.getenv("TTS_CFG_SCALE", "1.5"))
+# --- Kokoro (local MLX TTS) -------------------------------------------------
+TTS_MODEL = os.getenv("TTS_MODEL", "mlx-community/Kokoro-82M-bf16")
+TTS_LANG_CODE = "a"  # American English, for both misaki's G2P and the voice packs below
+SAMPLE_RATE = 24_000  # Kokoro's native output rate; synth.py resamples only if this stops matching
 LUFS_TARGET = -16.0  # podcast loudness standard
 
 # --- Listen-back (post-synthesis ASR check) ---------------------------------
@@ -45,19 +43,22 @@ MARKETS_LEAD = "Now to the markets."
 @dataclass(frozen=True)
 class Host:
     name: str          # role label the writer uses as the speaker tag
-    voice: str         # VibeVoice voice-cache id
-    speed: float = 1.0  # post-synthesis tempo (pitch-preserving); >1 = faster
+    voice: str         # Kokoro voice id
+    speed: float = 1.0  # Kokoro's own generation-time pacing knob
+    tempo: float = 1.0  # post-synthesis ffmpeg atempo (pitch-preserving); applied only if != 1.0
 
 
 # Tagesschau-style: one authoritative anchor for the news, a second voice for weather.
-# Bundled voices: en-Frank_man, en-Davis_man, en-Carter_man, en-Mike_man,
-#                 en-Grace_woman, en-Emma_woman.
-# Measured base rates: Frank ~196 wpm (brisk), Emma ~159 wpm (calm).
-# These tempos land both near a clear ~180 wpm news-anchor pace.
-ANCHOR = Host(name="Anchor", voice=os.getenv("ANCHOR_VOICE", "en-Frank_man"),
-              speed=float(os.getenv("SPEED_ANCHOR", "0.92")))
-WEATHER = Host(name="Weather", voice=os.getenv("WEATHER_VOICE", "en-Emma_woman"),
-               speed=float(os.getenv("SPEED_WEATHER", "1.10")))
+# Voice + speed picked in a blind A/B listening trial against the VibeVoice
+# incumbent. The anchor's pace comes entirely from Kokoro's own generation
+# speed (no post-synthesis stretch); the weather voice keeps the tempo bump
+# that VibeVoice also used.
+ANCHOR = Host(name="Anchor", voice=os.getenv("ANCHOR_VOICE", "am_michael"),
+              speed=float(os.getenv("SPEED_ANCHOR", "1.10")),
+              tempo=float(os.getenv("TEMPO_ANCHOR", "1.0")))
+WEATHER = Host(name="Weather", voice=os.getenv("WEATHER_VOICE", "af_heart"),
+               speed=float(os.getenv("SPEED_WEATHER", "1.0")),
+               tempo=float(os.getenv("TEMPO_WEATHER", "1.10")))
 HOSTS: dict[str, Host] = {ANCHOR.name: ANCHOR, WEATHER.name: WEATHER}
 
 # --- Local extras -----------------------------------------------------------

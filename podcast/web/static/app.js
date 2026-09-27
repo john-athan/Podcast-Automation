@@ -322,13 +322,12 @@ function renderWaveform(peaks) {
 function renderOutput() {
   const o = ST && ST.output;
   const kv = $("#outMeta");
-  const ddpm = CFG ? (CFG.fields.find((f) => f.key === "ddpm_steps") || {}).value : "-";
   if (!o || !o.exists) {
     $("#playBtn").disabled = true;
     $("#dur").textContent = "00:00";
     $("#lufsVal").textContent = "-";
     $("#lufsMask").style.width = "100%";
-    kv.innerHTML = `<dt>DDPM steps</dt><dd>${ddpm}</dd>`;
+    kv.innerHTML = "";
     return;
   }
   $("#playBtn").disabled = false;
@@ -349,8 +348,7 @@ function renderOutput() {
     `<dt>Sample rate</dt><dd>${(o.samplerate / 1000).toFixed(0)} kHz</dd>`
     + `<dt>Loudnorm</dt><dd>${target.toFixed(0)} LUFS</dd>`
     + (meas != null ? `<dt>Measured</dt><dd>${meas.toFixed(1)} LUFS</dd>` : "")
-    + `<dt>Size</dt><dd>${(o.size_bytes / 1e6).toFixed(1)} MB</dd>`
-    + `<dt>DDPM steps</dt><dd>${ddpm}</dd>`;
+    + `<dt>Size</dt><dd>${(o.size_bytes / 1e6).toFixed(1)} MB</dd>`;
 
   if (o.mtime !== audioMtime) {
     audioMtime = o.mtime;
@@ -382,11 +380,11 @@ function renderVoices() {
   const box = $("#voices");
   if (!ST) { box.innerHTML = ""; return; }
   box.innerHTML = ST.voices.map((v, i) => {
-    const initial = v.voice.replace(/^en-/, "").charAt(0).toUpperCase();
-    const wpm = v.wpm ? `${v.wpm} wpm · ×${v.speed}` : `×${v.speed}`;
+    const initial = v.voice.charAt(0).toUpperCase();
+    const rate = v.tempo && v.tempo !== 1 ? `×${v.speed} speed · ×${v.tempo} tempo` : `×${v.speed} speed`;
     return `<div class="voice-row"><div class="who">`
       + `<span class="avatar" style="background:${AVATAR[i % 2]}">${esc(initial)}</span>`
-      + `<div><div style="font-weight:700">${esc(v.role)}</div><div class="eyebrow">${esc(wpm)}</div></div></div>`
+      + `<div><div style="font-weight:700">${esc(v.role)}</div><div class="eyebrow">${esc(rate)}</div></div></div>`
       + `<span class="sel">${esc(v.voice)}</span></div>`;
   }).join("");
 }

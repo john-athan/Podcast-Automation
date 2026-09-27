@@ -71,7 +71,7 @@ def embed(texts: list[str]) -> list[list[float]]:
 
 
 def unload_all() -> None:
-    """Free VRAM/RAM so VibeVoice has room. Best-effort."""
+    """Free VRAM/RAM so Kokoro has room. Best-effort."""
     with contextlib.suppress(Exception):
         subprocess.run([_LMS, "unload", "--all"], check=False,
                        capture_output=True, timeout=30)

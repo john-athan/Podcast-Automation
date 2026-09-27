@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "podcast-automation"
 version = "2.3.1"
-description = "Fully-local news-bulletin generator: RSS -> LM Studio script -> VibeVoice MLX audio."
+description = "Fully-local news-bulletin generator: RSS -> LM Studio script -> Kokoro MLX audio."
 requires-python = ">=3.14"
 license = "MIT"
 dependencies = [
@@ -15,13 +15,20 @@ dependencies = [
     "openai>=1.51",          # client only; points at local LM Studio
     "pydantic>=2.9",
     "python-dotenv>=1.0",
-    "mlx-audio>=0.2",        # VibeVoice on Apple Silicon
+    # Kokoro on Apple Silicon. Pinned, not floored: this exact release is the
+    # one the espeak-ng monkeypatch and the Kokoro generate() call below were
+    # written and tested against.
+    "mlx-audio==0.5.6",
     "soundfile>=0.12",
     "numpy>=1.26",
     # Security floor for a transitive dependency: torch arrives via
     # mlx-audio -> mlx-whisper. 2.13.0 is the release that fixes PYSEC-2025-194.
     # See https://osv.dev/vulnerability/PYSEC-2025-194
     "torch>=2.13.0",
+    # Kokoro's text front end; mlx-audio treats it as optional and does not
+    # declare it in any of its own extras, so it's listed here directly. The
+    # "en" extra is what pulls in espeakng-loader.
+    "misaki[en]>=0.9.4",
 ]
 
 [project.optional-dependencies]

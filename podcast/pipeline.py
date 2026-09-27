@@ -1,5 +1,5 @@
 """End-to-end orchestrator. Stages run sequentially; the LLM is unloaded
-before TTS so VibeVoice has room on a 24GB machine.
+before TTS so Kokoro has room on a 24GB machine.
 
 An optional `emit` callback receives progress events (see podcast.events). The
 CLI passes the default no-op; the web console passes an emitter that streams

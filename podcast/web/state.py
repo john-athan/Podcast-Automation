@@ -21,9 +21,6 @@ from ..config import ANCHOR, PATHS, WEATHER, WEATHER_CITY
 from ..models import Script
 from . import audio
 
-# Reference base speaking rates for the bundled voices (from config.py notes).
-_WPM = {"en-Frank_man": 196, "en-Emma_woman": 159, "en-Davis_man": 190,
-        "en-Grace_woman": 165, "en-Carter_man": 185, "en-Mike_man": 188}
 _SIGNOFF = "That is tonight's bulletin. Good night."
 
 
@@ -285,6 +282,6 @@ def _voices() -> list[dict]:
     for role, host in (("Anchor", ANCHOR), ("Weather", WEATHER)):
         out.append({
             "role": role, "name": host.name, "voice": host.voice,
-            "speed": host.speed, "wpm": _WPM.get(host.voice),
+            "speed": host.speed, "tempo": host.tempo,
         })
     return out

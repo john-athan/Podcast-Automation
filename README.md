@@ -14,7 +14,7 @@ hydrate  -> full article text fetched + extracted (trafilatura) for the picks
 write    -> local LLM writes greeting + headline teasers + one turn per story
 verify   -> local LLM fact-checks every claim against sources, cuts unsupported
 assemble -> markets brief + Munich weather built deterministically from real data
-synth    -> VibeVoice (MLX): anchor voice + weather voice, real pauses between
+synth    -> Kokoro-82M (MLX): anchor voice + weather voice, real pauses between
             turns, ffmpeg two-pass loudnorm to -16 LUFS
 listen   -> ASR transcribes each turn back and diffs it against the sent text,
             flags any turn over LISTEN_BACK_WER_MAX (listen_back.json)
@@ -33,12 +33,13 @@ so everything fits in 24 GB.
 | Script | **qwen3.5-9b** via **LM Studio** (local, OpenAI-compatible server) |
 | Dedup  | **nomic-embed** embeddings via LM Studio (drop same-event stories) |
 | Full text | **trafilatura** (real article body, not thin RSS summaries) |
-| Voice  | **VibeVoice-Realtime-0.5B** (MLX), per-voice conditioning caches |
+| Voice  | **Kokoro-82M** (MLX), American English voice packs |
 | Data   | Open-Meteo (Munich weather), Yahoo Finance (DAX / S&P / EUR-USD), keyless |
 | Glue   | async httpx, feedparser, pydantic, ffmpeg |
 
-Anchor + weather voices map to bundled VibeVoice caches; swap voices/models/city
-in `podcast/config.py` or via `.env`.
+Anchor + weather map to Kokoro voice ids (`am_michael` / `af_heart`, picked in a
+blind A/B listening trial); swap voices/models/city in `podcast/config.py` or
+via `.env`.
 
 ## Requirements
 
@@ -46,6 +47,10 @@ in `podcast/config.py` or via `.env`.
 - [LM Studio](https://lmstudio.ai) running its local server (port 1234) with a
   writer model downloaded (`qwen3.5-9b-mlx`), and an API token
 - `ffmpeg` (for loudness normalization), optional but recommended
+- `brew install espeak-ng`, Kokoro's text front end (`misaki`) falls back to it
+  for words outside its own dictionary
+- Network access on the very first synth run: `misaki` downloads a small spacy
+  English model (`en_core_web_sm`) the first time it tags text; cached after that
 
 ## Setup
 
@@ -100,9 +105,9 @@ What it does:
   **Re-synth from script** to re-voice just the edited bulletin.
 - **Output**, waveform, measured integrated loudness (ffmpeg `ebur128`) against
   the −16 LUFS target, and a seekable player.
-- **Run config**, city, writer model, DDPM steps, voices, speeds, publish,
-  edited in place and written to `.env`; each run executes in a fresh child
-  process so edits apply immediately with no restart.
+- **Run config**, city, writer model, voices, speeds, tempos, publish, edited
+  in place and written to `.env`; each run executes in a fresh child process
+  so edits apply immediately with no restart.
 
 Every run is a normal `podcast.pipeline.run` in a child process (so its RAM is
 reclaimed on exit and `.env` is reloaded); the CLI and console share the exact
@@ -152,14 +157,14 @@ prints a warning.
 | Var | Default | Notes |
 |-----|---------|-------|
 | `WRITER_MODEL` | `qwen3.5-9b-mlx` | any LM Studio model; `qwen3.5-4b-mlx` is lighter |
-| `TTS_MODEL` | `mlx-community/VibeVoice-Realtime-0.5B-fp16` | |
-| `TTS_DDPM_STEPS` | `20` | higher = better quality, slower |
-| `TTS_CFG_SCALE` | `1.5` | classifier-free guidance strength for VibeVoice |
-| `ANCHOR_VOICE` / `WEATHER_VOICE` | `en-Frank_man` / `en-Emma_woman` | bundled VibeVoice caches |
+| `TTS_MODEL` | `mlx-community/Kokoro-82M-bf16` | |
+| `ANCHOR_VOICE` / `WEATHER_VOICE` | `am_michael` / `af_heart` | Kokoro American English voice ids |
 | `LISTEN_BACK` | `1` | ASR-transcribes each turn back and diffs it vs. the sent text; `0` skips it |
 | `ASR_MODEL` | `mlx-community/parakeet-tdt-0.6b-v2` | listen-back's speech-to-text model |
 | `LISTEN_BACK_WER_MAX` | `0.15` | word error rate above which a turn is flagged |
-| `SPEED_ANCHOR` / `SPEED_WEATHER` | `0.92` / `1.10` | tempo, pitch-preserving; >1 = faster |
+| `SPEED_ANCHOR` / `SPEED_WEATHER` | `1.10` / `1.0` | Kokoro's own generation speed; >1 = faster |
+| `TEMPO_ANCHOR` / `TEMPO_WEATHER` | `1.0` / `1.10` | post-synthesis tempo, pitch-preserving; applied only if != 1.0 |
+| `ESPEAK_LIBRARY` / `ESPEAK_DATA` | `/opt/homebrew/lib/libespeak-ng.dylib` / `/opt/homebrew/share/espeak-ng-data` | override if espeak-ng lives elsewhere |
 | `WEATHER_CITY` / `WEATHER_LAT` / `WEATHER_LON` | `Munich` / `48.137` / `11.575` | weather segment |
 
 ## Notes on model choice
@@ -172,4 +177,4 @@ prints a warning.
 ## License
 
 MIT, see [LICENSE](LICENSE). Note the local models carry their own licenses
-(VibeVoice: MIT; Qwen3.5: Qwen license) and are not redistributed here.
+(Kokoro-82M: Apache-2.0; Qwen3.5: Qwen license) and are not redistributed here.

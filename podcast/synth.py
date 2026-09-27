@@ -1,13 +1,15 @@
-"""VibeVoice (MLX) turn-by-turn synthesis -> single loudness-normalized WAV."""
+"""Kokoro (MLX) turn-by-turn synthesis -> single loudness-normalized WAV."""
 from __future__ import annotations
 
 import gc
 import io
 import json
+import os
 import re
 import shutil
 import subprocess
 import time
+from pathlib import Path
 
 import numpy as np
 import soundfile as sf
@@ -20,8 +22,7 @@ from .config import (
     MARKETS_LEAD,
     PATHS,
     SAMPLE_RATE,
-    TTS_CFG_SCALE,
-    TTS_DDPM_STEPS,
+    TTS_LANG_CODE,
     TTS_MODEL,
     WEATHER,
 )
@@ -47,8 +48,8 @@ FADE_SILENCE_THRESHOLD = 1e-3
 def sanitize_for_tts(text: str) -> str:
     """Make text speak cleanly: expand symbols, drop extraction artifacts.
 
-    VibeVoice mangles bare symbols (& $ %) and stray glyphs. Whisper diff traced
-    the 'JUST&T' garble and the mangled dollar figure here.
+    The voice model mangles bare symbols (& $ %) and stray glyphs. Whisper diff
+    traced the 'JUST&T' garble and the mangled dollar figure here.
     """
     t = text
     t = re.sub(r"\$\s?([\d,]+(?:\.\d+)?)\s*(million|billion|trillion)",
@@ -65,6 +66,24 @@ def sanitize_for_tts(text: str) -> str:
     t = re.sub(r"\s+([.,!?;:])", r"\1", t)           # tidy spacing before punctuation
     t = re.sub(r"\s{2,}", " ", t).strip()
     return t
+
+
+def _patch_espeak() -> None:
+    """Point misaki's espeak-ng loader at the Homebrew install.
+
+    The espeakng-loader wheel bakes in a library path from its own CI machine;
+    that path does not exist here, and espeak-ng kills the process outright
+    when it can't find its library. This has to run before misaki.espeak is
+    imported anywhere, since that module calls the loader at import time.
+    """
+    import espeakng_loader
+
+    lib = Path(os.getenv("ESPEAK_LIBRARY", "/opt/homebrew/lib/libespeak-ng.dylib"))
+    data = os.getenv("ESPEAK_DATA", "/opt/homebrew/share/espeak-ng-data")
+    if not lib.exists():
+        raise RuntimeError(f"espeak-ng library not found at {lib}. Run: brew install espeak-ng")
+    espeakng_loader.get_library_path = lambda: str(lib)
+    espeakng_loader.get_data_path = lambda: data
 
 
 def _atempo(audio: np.ndarray, factor: float) -> np.ndarray:
@@ -199,8 +218,10 @@ def generate_audio(script: Script | None = None, emit: Emitter = noop):
     if script is None:
         script = Script.model_validate_json(PATHS.script.read_text())
 
+    _patch_espeak()
     # Import here so the heavy MLX load happens only after the LLM is unloaded.
     from mlx_audio.tts.utils import load_model
+    from mlx_audio.utils import resample_audio
 
     print(f"Loading {TTS_MODEL} ...")
     emit(substage("synth", f"loading {TTS_MODEL.split('/')[-1]}"))
@@ -219,15 +240,15 @@ def generate_audio(script: Script | None = None, emit: Emitter = noop):
         # One turn at a time so each host's tempo can be applied to its own audio.
         sent = sanitize_for_tts(turn.text)
         sent_texts.append(sent)
-        parts = [
-            np.asarray(r.audio)
-            for r in model.generate(
-                text=[sent], voice=[host.voice],
-                cfg_scale=TTS_CFG_SCALE, ddpm_steps=TTS_DDPM_STEPS,
-                max_tokens=1200, verbose=False,
-            )
-        ]
-        segments.append(_atempo(np.concatenate(parts), host.speed))
+        parts = []
+        result_sr = SAMPLE_RATE
+        for r in model.generate(text=sent, voice=host.voice, speed=host.speed, lang_code=TTS_LANG_CODE):
+            parts.append(np.asarray(r.audio))
+            result_sr = r.sample_rate
+        turn_audio = np.concatenate(parts)
+        if result_sr != SAMPLE_RATE:
+            turn_audio = resample_audio(turn_audio, result_sr, SAMPLE_RATE, axis=0)
+        segments.append(_atempo(turn_audio, host.tempo))
     synth_elapsed = time.perf_counter() - t0
 
     if LISTEN_BACK:

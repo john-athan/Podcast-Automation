@@ -17,7 +17,7 @@ STAGES: list[tuple[str, str, str]] = [
     ("write",    "Write",    "LLM writes greeting, teasers, reads"),
     ("verify",   "Verify",   "fact-check every claim vs sources"),
     ("assemble", "Assemble", "markets + weather built from live data"),
-    ("synth",    "Synth",    "VibeVoice MLX voices each turn"),
+    ("synth",    "Synth",    "Kokoro MLX voices each turn"),
     ("publish",  "Publish",  "optional Drive upload + email"),
 ]
 STAGE_KEYS = [k for k, _, _ in STAGES]
