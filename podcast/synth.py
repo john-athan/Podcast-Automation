@@ -223,7 +223,7 @@ def _loudnorm(path) -> None:
         return
     measured = _measure_loudness(path)
     tmp = path.with_suffix(".norm.wav")
-    subprocess.run(
+    proc = subprocess.run(
         ["ffmpeg", "-y", "-i", str(path),
          "-af", (f"loudnorm=I={LUFS_TARGET}:TP=-1.5:LRA=11:"
                  f"measured_I={measured['input_i']}:measured_TP={measured['input_tp']}:"
@@ -232,8 +232,12 @@ def _loudnorm(path) -> None:
          "-ar", str(SAMPLE_RATE), str(tmp)],
         check=False, capture_output=True,
     )
-    if tmp.exists():
-        tmp.replace(path)
+    # A failed pass can leave a truncated file behind; keeping the original beats shipping that.
+    if proc.returncode != 0:
+        tmp.unlink(missing_ok=True)
+        print(f"  loudnorm pass 2 failed (ffmpeg exit {proc.returncode}), keeping un-normalised audio")
+        return
+    tmp.replace(path)
 
 
 def generate_audio(script: Script | None = None, emit: Emitter = noop):
@@ -257,7 +261,10 @@ def generate_audio(script: Script | None = None, emit: Emitter = noop):
     segments: list[np.ndarray] = []
     sent_texts: list[str] = []
     for i, turn in enumerate(script.turns):
-        host = HOSTS[turn.speaker]
+        host = HOSTS.get(turn.speaker)
+        if host is None:
+            # A hand-edited script.json skips the writer's speaker normalisation.
+            raise ValueError(f"turn {i + 1}: unknown speaker {turn.speaker!r}, expected one of {sorted(HOSTS)}")
         print(f"  {i + 1}/{len(script.turns)} {host.name}")
         emit(substage("synth", f"turn {i + 1}/{n} · {host.name}", i=i + 1, n=n))
         # One turn at a time so each host's tempo can be applied to its own audio.
