@@ -50,9 +50,7 @@ class Host:
 
 # Tagesschau-style: one authoritative anchor for the news, a second voice for weather.
 # Voice + speed picked in a blind A/B listening trial against the VibeVoice
-# incumbent. The anchor's pace comes entirely from Kokoro's own generation
-# speed (no post-synthesis stretch); the weather voice keeps the tempo bump
-# that VibeVoice also used.
+# incumbent.
 # Each voice keeps the pacing it was approved at in the listening trial:
 # Heart at native speed plus a tempo bump, Michael at a faster native speed.
 ANCHOR = Host(name="Anchor", voice=os.getenv("ANCHOR_VOICE", "af_heart"),
