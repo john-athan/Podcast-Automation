@@ -1390,7 +1390,7 @@ wheels = [
 
 [[package]]
 name = "podcast-automation"
-version = "3.0.2"
+version = "3.0.3"
 source = { editable = "." }
 dependencies = [
     { name = "en-core-web-sm" },
