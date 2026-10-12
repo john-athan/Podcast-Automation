@@ -1,4 +1,4 @@
-"""The writer retries an empty or near-empty draft and gives up loudly, and the
+"""Curate refuses an empty catalogue. The writer retries an empty or near-empty draft and gives up loudly, and the
 fact-check refuses an empty draft and keeps every turn on the anchor. The
 model call is replaced by a stub, so no LLM is needed.
 
@@ -11,8 +11,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import tempfile
 
-from podcast import config, verify, write
-from podcast.models import FactCheck, Script, Turn
+from podcast import config, curate, verify, write
+from podcast.models import Article, Curation, FactCheck, Script, Turn
 
 checks = 0
 
@@ -65,5 +65,27 @@ verify.structured, _ = stub([FactCheck(turns=turns(2) + turns(1, "Weather"), rem
 out = verify.fact_check(Script(turns=turns(3)), "brief")
 check("a Weather tag from the fact-check is put back on the anchor",
       [t.speaker for t in out.turns] == ["Anchor"] * 3)
+
+verify.structured, _ = stub([FactCheck(turns=[Turn(speaker="Anchor", text="  ")], removed=[])])
+try:
+    verify.fact_check(Script(turns=turns(3)), "brief")
+    refused = False
+except ValueError:
+    refused = True
+check("the fact-check refuses to blank the script", refused)
+
+try:
+    curate.curate([])
+    refused = False
+except ValueError:
+    refused = True
+check("curate refuses an empty article list instead of asking the model for news", refused)
+
+curate._dedupe = lambda articles, emit=None: articles
+curate.structured, _ = stub([Curation(picks=[])])
+arts = [Article(domain="tech", title="Chip maker ships new part", content="x", link="")]
+cur, chosen = curate.curate(arts)
+check("a model that picks nothing is topped up from the real articles",
+      [a.title for a in chosen] == [arts[0].title])
 
 print(f"\n{checks} checks passed")

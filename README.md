@@ -113,6 +113,7 @@ Every run is a normal `podcast.pipeline.run` in a child process (so its RAM is
 reclaimed on exit and `.env` is reloaded); the CLI and console share the exact
 same stage code.
 
+The offline unit tests run with `tools/validate.sh` (or `oss check Podcast-Automation`).
 Four verification scripts cover the wiring without needing the local models:
 
 ```sh
@@ -165,6 +166,7 @@ prints a warning.
 | `SPEED_ANCHOR` / `SPEED_WEATHER` | `1.0` / `1.10` | Kokoro's own generation speed; >1 = faster |
 | `TEMPO_ANCHOR` / `TEMPO_WEATHER` | `1.10` / `1.0` | post-synthesis tempo, pitch-preserving; applied only if != 1.0 |
 | `ESPEAK_LIBRARY` / `ESPEAK_DATA` | `/opt/homebrew/lib/libespeak-ng.dylib` / `/opt/homebrew/share/espeak-ng-data` | override if espeak-ng lives elsewhere |
+| `PODCAST_OUT` | `output` | directory every artifact below is written to |
 | `WEATHER_CITY` / `WEATHER_LAT` / `WEATHER_LON` | `Munich` / `48.137` / `11.575` | weather segment |
 
 ## Notes on model choice

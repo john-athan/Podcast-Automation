@@ -71,6 +71,10 @@ def curate(articles: list[Article] | None = None,
            emit: Emitter = noop) -> tuple[Curation, list[Article]]:
     if articles is None:
         articles = [Article(**a) for a in json.loads(PATHS.content.read_text())]
+    if not articles:
+        # Every feed down (offline, blocked) lands here. With an empty catalogue
+        # the editor model invents headlines and the writer then voices them.
+        raise ValueError("curate got no articles; no feed could be read")
 
     articles = _dedupe(articles, emit)
     catalogue = "\n".join(f"[{a.domain}] {a.title}" for a in articles)
@@ -94,6 +98,9 @@ def curate(articles: list[Article] | None = None,
                 picks.append(Selection(domain=a.domain, title=a.title,
                                        reason="editor's balance pick"))
                 chosen.append(a)
+
+    if not chosen:
+        raise ValueError("curate could not match any pick to a fetched article")
 
     curation = Curation(picks=picks[:TARGET_PICKS])
     chosen = chosen[:TARGET_PICKS]

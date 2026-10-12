@@ -47,6 +47,10 @@ def fact_check(script: Script, brief: str, emit: Emitter = noop) -> Script:
         t.speaker = ANCHOR.name
 
     corrected = Script(turns=[t for t in result.turns if t.text.strip()])
+    if not corrected.turns:
+        # Same failure as an empty draft, one stage later: assemble() would add
+        # only markets, weather and the sign-off, and that would get voiced.
+        raise ValueError("fact-check returned no turns; keeping the draft out of script.json")
     result.removed = [n for n in result.removed if n.strip().lower() not in ("none", "n/a", "")]
     if result.removed:
         print(f"  {len(result.removed)} claims cut/corrected:")
