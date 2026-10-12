@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = ">=3.14"
 
 [[package]]
@@ -1390,7 +1390,7 @@ wheels = [
 
 [[package]]
 name = "podcast-automation"
-version = "3.0.3"
+version = "3.0.4"
 source = { editable = "." }
 dependencies = [
     { name = "en-core-web-sm" },
