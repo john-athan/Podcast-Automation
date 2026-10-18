@@ -56,9 +56,13 @@ def _credentials():
         # port=0 lets the OS pick, so a stale redirect port cannot wedge the flow.
         creds = flow.run_local_server(port=0)
 
-    # Persisting the refresh token is what keeps this to one browser prompt ever;
-    # 0o600 because the file is a live credential.
-    _TOKEN_FILE.write_text(creds.to_json())
+    # Persisting the refresh token is what keeps this to one browser prompt ever.
+    # The file is a live credential, so it is created 0o600 rather than written
+    # world-readable and tightened afterwards; chmod still covers a file left
+    # behind by an older version.
+    fd = os.open(_TOKEN_FILE, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, "w") as f:
+        f.write(creds.to_json())
     _TOKEN_FILE.chmod(0o600)
     return creds
 
@@ -133,8 +137,11 @@ def _share_with_recipient(drive, file_id: str) -> None:
 def email_link(link: str) -> None:
     sender = os.getenv("EMAIL")
     recipient = os.getenv("RECIPIENT_EMAIL")
-    if not (sender and recipient):
-        print("  email skipped (EMAIL/RECIPIENT_EMAIL unset)")
+    server_host = os.getenv("SMTP_SERVER")
+    # smtplib.SMTP(None) opens no connection, so a missing host would only
+    # surface later as an obscure "run connect() first" from starttls.
+    if not (sender and recipient and server_host):
+        print("  email skipped (EMAIL/RECIPIENT_EMAIL/SMTP_SERVER unset)")
         return
     msg = MIMEMultipart()
     msg["From"], msg["To"] = sender, recipient
@@ -144,7 +151,7 @@ def email_link(link: str) -> None:
     # Every other network call in this module (Drive) and its siblings (RSS,
     # weather, markets) bounds its wait; an unreachable SMTP host without one
     # blocks the socket forever and wedges the whole publish stage.
-    with smtplib.SMTP(os.getenv("SMTP_SERVER"), int(os.getenv("SMTP_PORT", "587")),
+    with smtplib.SMTP(server_host, int(os.getenv("SMTP_PORT", "587")),
                       timeout=20) as server:
         server.starttls()
         server.login(sender, os.getenv("PASSWORD"))
