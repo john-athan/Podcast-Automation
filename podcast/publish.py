@@ -143,6 +143,11 @@ def email_link(link: str) -> None:
     if not (sender and recipient and server_host):
         print("  email skipped (EMAIL/RECIPIENT_EMAIL/SMTP_SERVER unset)")
         return
+    password = os.getenv("PASSWORD")
+    if not password:
+        # login(None) fails deep inside smtplib after the upload already ran.
+        print("  email skipped (PASSWORD unset)")
+        return
     msg = MIMEMultipart()
     msg["From"], msg["To"] = sender, recipient
     msg["Subject"] = "Your Podcast Episode is Ready"
@@ -154,7 +159,7 @@ def email_link(link: str) -> None:
     with smtplib.SMTP(server_host, int(os.getenv("SMTP_PORT", "587")),
                       timeout=20) as server:
         server.starttls()
-        server.login(sender, os.getenv("PASSWORD"))
+        server.login(sender, password)
         server.sendmail(sender, recipient, msg.as_string())
     print(f"  emailed link to {recipient}")
 

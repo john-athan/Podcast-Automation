@@ -37,6 +37,17 @@ FIELDS: dict[str, tuple[str, str, str, object]] = {
 }
 
 
+# Bounds for the float fields. The console writes straight into .env, which the
+# pipeline trusts: ffmpeg's atempo only accepts 0.5 to 2.0, a zero or negative
+# Kokoro speed makes it fail mid-run, and coordinates outside the globe make
+# Open-Meteo answer 400, which the weather fetch then reports as "unavailable".
+_RANGES = {
+    "weather_lat": (-90.0, 90.0), "weather_lon": (-180.0, 180.0),
+    "speed_anchor": (0.1, 3.0), "speed_weather": (0.1, 3.0),
+    "tempo_anchor": (0.5, 2.0), "tempo_weather": (0.5, 2.0),
+}
+
+
 def _coerce(kind: str, raw):
     if raw is None:
         return None
@@ -71,12 +82,28 @@ def write_config(updates: dict[str, object]) -> dict:
             continue
         var, _label, kind, _default = FIELDS[key]
         coerced = _coerce(kind, val)
+        _check(key, kind, coerced)
         if kind == "bool":
             to_set[var] = "1" if coerced else "0"
         else:
             to_set[var] = str(coerced)
     _upsert_env(to_set)
     return read_config()
+
+
+def _check(key: str, kind: str, value) -> None:
+    """Reject values that would corrupt .env or fail the next run."""
+    if kind == "float":
+        lo, hi = _RANGES.get(key, (float("-inf"), float("inf")))
+        if not (lo <= value <= hi):  # also false for NaN
+            raise ValueError(f"{key} must be between {lo} and {hi}")
+    elif kind in ("str", "voice"):
+        # A newline here would write a second line into .env, i.e. set any
+        # variable (LMSTUDIO_BASE_URL, SMTP_SERVER, ...) from a PATCH body.
+        if not value.strip() or any(ord(c) < 32 or ord(c) == 127 for c in value):
+            raise ValueError(f"{key} must be a non-empty single line")
+        if kind == "voice" and value not in VOICES:
+            raise ValueError(f"{key} must be one of the offered voices")
 
 
 def _upsert_env(pairs: dict[str, str]) -> None:

@@ -50,6 +50,9 @@ uv run python tests/test_pronunciations.py || fail=1
 step "Host speed/tempo split: Kokoro's own pacing vs. the post-synthesis atempo pass"
 uv run python tests/test_host_speed.py || fail=1
 
+step "Console config writes: bounds and single-line values"
+uv run python tests/test_config_io.py || fail=1
+
 if [ "$(uname -sm)" = "Darwin arm64" ]; then
   step "Apple Silicon: resolve the real dependency tree"
   uv sync --frozen --quiet && echo "ok, environment resolves" || fail=1

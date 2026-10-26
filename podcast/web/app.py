@@ -180,7 +180,10 @@ def api_config_get():
 
 @app.patch("/api/config")
 async def api_config_patch(updates: dict):
-    return config_io.write_config(updates)
+    try:
+        return config_io.write_config(updates)
+    except (ValueError, TypeError) as exc:
+        return JSONResponse({"error": str(exc)}, status_code=400)
 
 
 class ScriptPayload(BaseModel):

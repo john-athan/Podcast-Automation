@@ -276,6 +276,10 @@ def generate_audio(script: Script | None = None, emit: Emitter = noop):
         for r in model.generate(text=spoken, voice=host.voice, speed=host.speed, lang_code=TTS_LANG_CODE):
             parts.append(np.asarray(r.audio))
             result_sr = r.sample_rate
+        if not parts:
+            # Text that sanitizes to nothing (a turn of only quotes or brackets)
+            # yields no audio; np.concatenate would fail with an unhelpful error.
+            raise ValueError(f"turn {i + 1}: no speakable text after cleanup")
         turn_audio = np.concatenate(parts)
         if result_sr != SAMPLE_RATE:
             turn_audio = resample_audio(turn_audio, result_sr, SAMPLE_RATE, axis=0)
