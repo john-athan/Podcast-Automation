@@ -1,4 +1,8 @@
 version: 2
+# Automated security PRs are switched off for this repo (alerts stay on): they
+# run uv's updater, which has to fetch the spaCy model from its GitHub release
+# URL (pyproject.toml, tool.uv.sources) and fails there every time. Advisories
+# still show up in `oss doctor` and are fixed in uv.lock by the weekly fleet run.
 updates:
   # Python dependencies declared in pyproject.toml
   # One PR for all Python updates, majors included.
