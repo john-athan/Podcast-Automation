@@ -43,7 +43,7 @@ via `.env`.
 
 ## Requirements
 
-- Apple Silicon Mac, Python 3.14 (managed by `uv`)
+- Apple Silicon Mac, Python 3.15 (managed by `uv`)
 - [LM Studio](https://lmstudio.ai) running its local server (port 1234) with a
   writer model downloaded (`lms get qwen/qwen3.5-9b --mlx`), and an API token
 - `ffmpeg` (for loudness normalization), optional but recommended
@@ -55,7 +55,7 @@ via `.env`.
 ## Setup
 
 ```sh
-uv sync                        # creates .venv from uv.lock (Python 3.14)
+uv sync                        # creates .venv from uv.lock (Python 3.15)
 cp .env.example .env           # set LMSTUDIO_API_TOKEN
 ```
 

@@ -93,6 +93,9 @@ def write_config(updates: dict[str, object]) -> dict:
 
 def _check(key: str, kind: str, value) -> None:
     """Reject values that would corrupt .env or fail the next run."""
+    if value is None and kind != "bool":
+        # JSON null survives _coerce; it would otherwise crash as a 500 below.
+        raise ValueError(f"{key} must not be null")
     if kind == "float":
         lo, hi = _RANGES.get(key, (float("-inf"), float("inf")))
         if not (lo <= value <= hi):  # also false for NaN
@@ -100,7 +103,9 @@ def _check(key: str, kind: str, value) -> None:
     elif kind in ("str", "voice"):
         # A newline here would write a second line into .env, i.e. set any
         # variable (LMSTUDIO_BASE_URL, SMTP_SERVER, ...) from a PATCH body.
-        if not value.strip() or any(ord(c) < 32 or ord(c) == 127 for c in value):
+        # isprintable also catches U+2028 and NEL, which str.splitlines() in
+        # _upsert_env treats as line breaks.
+        if not value.strip() or not value.isprintable():
             raise ValueError(f"{key} must be a non-empty single line")
         if kind == "voice" and value not in VOICES:
             raise ValueError(f"{key} must be one of the offered voices")

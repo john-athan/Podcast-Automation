@@ -6,7 +6,7 @@ build-backend = "hatchling.build"
 name = "podcast-automation"
 version = "3.0.6"
 description = "Fully-local news-bulletin generator: RSS -> LM Studio script -> Kokoro MLX audio."
-requires-python = ">=3.14"
+requires-python = ">=3.15"
 license = "MIT"
 dependencies = [
     "httpx>=0.27",
@@ -68,7 +68,7 @@ packages = ["podcast"]
 
 [tool.ruff]
 line-length = 100
-target-version = "py314"
+target-version = "py315"
 
 [tool.ruff.lint]
 # Every `except Exception` in this package is a deliberate degrade-don't-crash

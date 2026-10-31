@@ -39,6 +39,8 @@ with tempfile.TemporaryDirectory() as d:
     check("NaN is rejected", rejected({"weather_lat": "nan"}))
     check("latitude beyond the poles is rejected", rejected({"weather_lat": 91}))
     check("an unknown voice is rejected", rejected({"anchor_voice": "xx_nobody"}))
+    check("JSON null is a rejection, not a crash", rejected({"weather_city": None}))
+    check("a Unicode line separator is rejected", rejected({"weather_city": "a\u2028b"}))
     config_io.write_config({"weather_city": "Berlin", "tempo_anchor": "1.2"})
     check("a valid update is written", "WEATHER_CITY=Berlin" in config_io._ENV_PATH.read_text())
 
