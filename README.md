@@ -9,7 +9,7 @@ or TTS calls**. Built for Apple Silicon.
 
 ```
 ingest   -> RSS feeds fetched in parallel (async httpx)
-curate   -> semantic dedup (local embeddings) + local LLM ranks/picks 6 stories
+curate   -> semantic dedup (local embeddings) + local LLM ranks/picks up to 6 stories (the top-up adds at most one per domain, so an under-picking model can leave fewer)
 hydrate  -> full article text fetched + extracted (trafilatura) for the picks
 write    -> local LLM writes greeting + headline teasers + one turn per story
 verify   -> local LLM fact-checks every claim against sources, cuts unsupported
